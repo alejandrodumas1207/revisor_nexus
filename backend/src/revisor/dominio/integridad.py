@@ -17,11 +17,17 @@ class VeredictoCopia(StrEnum):
     NINGUNA = "ninguna"
 
 
+class Tardanza(StrEnum):
+    A_TIEMPO = "a tiempo"
+    CONFIRMADA = "tardía confirmada"  # marca Extemporanea de NEXUS o fecha posterior al límite vigente
+    DUDOSA = "dudosa"  # no se penaliza; se señala al docente
+
+
 @dataclass(frozen=True, slots=True)
 class ReglasIntegridad:
     factor_copia: float = 0.5  # copia confirmada: la calificación se divide a la mitad
     puntos_formato: float = 1.0  # tipo de archivo incorrecto: descuento simbólico que se nota en NEXUS
-    puntos_tardia: float = 0.0  # se restan de 0-10; en 0 mientras no se defina la penalización
+    puntos_tardia: float = 1.0  # solo con tardanza confirmada
 
 
 def calificacion_final(
@@ -29,7 +35,7 @@ def calificacion_final(
     validas: Sequence[int],
     *,
     formato_incorrecto: bool = False,
-    tardia: bool = False,
+    tardanza: Tardanza = Tardanza.A_TIEMPO,
     copia: VeredictoCopia = VeredictoCopia.NINGUNA,
     reglas: ReglasIntegridad | None = None,
     politica: PoliticaAjuste = POLITICA_POR_DEFECTO,
@@ -38,7 +44,7 @@ def calificacion_final(
     reglas = reglas or ReglasIntegridad()
     if formato_incorrecto:
         valor = max(0.0, valor - reglas.puntos_formato)
-    if tardia:
+    if tardanza is Tardanza.CONFIRMADA:
         valor = max(0.0, valor - reglas.puntos_tardia)
     if copia is VeredictoCopia.CONFIRMADA:
         valor *= reglas.factor_copia

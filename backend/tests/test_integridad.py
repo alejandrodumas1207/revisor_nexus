@@ -1,5 +1,5 @@
 from revisor.dominio.calificacion import calificaciones_validas
-from revisor.dominio.integridad import ReglasIntegridad, VeredictoCopia, calificacion_final
+from revisor.dominio.integridad import ReglasIntegridad, Tardanza, VeredictoCopia, calificacion_final
 
 SIN_RUBRICA = calificaciones_validas(None, [])
 RUBRICA_3 = calificaciones_validas(3, [100, 70, 40, 0])
@@ -31,10 +31,17 @@ def test_formato_con_rubrica_nexus_puede_absorberse_al_subir_a_valida():
     assert calificacion_final(4.0, RUBRICA_3, formato_incorrecto=True) == 4
 
 
-def test_tardia_sin_penalizacion_por_ahora():
-    assert calificacion_final(8.0, SIN_RUBRICA, tardia=True) == 8
+def test_tardanza_confirmada_resta_un_punto():
+    assert calificacion_final(8.0, SIN_RUBRICA, tardanza=Tardanza.CONFIRMADA) == 7
 
 
-def test_tardia_con_penalizacion_configurada():
-    reglas = ReglasIntegridad(puntos_tardia=1.0)
-    assert calificacion_final(8.0, SIN_RUBRICA, tardia=True, reglas=reglas) == 7
+def test_tardanza_dudosa_no_penaliza():
+    assert calificacion_final(8.0, SIN_RUBRICA, tardanza=Tardanza.DUDOSA) == 8
+
+
+def test_penalizaciones_configurables_y_acumuladas():
+    reglas = ReglasIntegridad(puntos_tardia=2.0)
+    final = calificacion_final(
+        10.0, SIN_RUBRICA, formato_incorrecto=True, tardanza=Tardanza.CONFIRMADA, reglas=reglas
+    )
+    assert final == 7

@@ -21,7 +21,7 @@ En RNAP E1-E2 hubo copias confirmadas y varios alumnos con 0 por "no se registr�
   - **Copia confirmada:** coincidencia exacta o con varios indicadores claros. Se sanciona.
   - **Probable:** va a revisión manual, con la ubicación de cada coincidencia (pregunta, celda, frase), y el docente decide si pasa como copia.
   - **Coincidencia por plantilla:** no es copia y no se muestra como alerta.
-- **Entrega tardía.** Se acepta. La penalización queda configurable en puntos y por ahora vale 0.
+- **Entrega tardía.** Se acepta y resta 1 punto de 10, **solo cuando la tardanza es segura** (`Tardanza.CONFIRMADA`). Si hay duda (por ejemplo, la fecha límite se movió y no se sabe cuál regía), la entrega queda como `DUDOSA`: no se penaliza y se le muestra al docente para que decida.
   - Para saber si una entrega es tardía se usa primero la marca `Extemporanea` de NEXUS.
   - Cuando la entrega llega por formulario, se compara la fecha del archivo con la fecha límite del elemento. Si la fecha límite se movió, se usa como referencia la fecha que concentra a la mayoría de las entregas.
 - **Formato de entrega.** No es criterio de la lista de cotejo. Entregar otro tipo de archivo (.txt, .pdf, .zip en lugar de .ipynb) resta 1 punto de 10, una cantidad simbólica que se nota en NEXUS. Un nombre de archivo incorrecto no se penaliza; solo se avisa en la retroalimentación.
