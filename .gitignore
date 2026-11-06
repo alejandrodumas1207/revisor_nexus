@@ -1,0 +1,24 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.coverage
+
+# Node
+node_modules/
+dist/
+
+# Configuración personal de Claude Code
+.claude/settings.local.json
+
+# Datos locales y sesión (nunca se versionan)
+*.db
+*.db-wal
+*.db-shm
+.perfil_nexus/
+registros/
+datos_locales/
+*.xlsx
+.env*
