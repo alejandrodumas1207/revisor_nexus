@@ -1,30 +1,23 @@
-"""Subir a NEXUS la revisión validada de un alumno: calificación y retroalimentación."""
+"""Subir a NEXUS la revisión validada de un alumno: calificación y retroalimentación final."""
 
 from collections.abc import Sequence
 from dataclasses import dataclass
 
 from revisor.dominio.modelos import CalificacionNexus, Elemento
-from revisor.dominio.retroalimentacion import PlanRetro, RetroNexus, TipoAccion, planear_retro
+from revisor.dominio.retroalimentacion import (
+    AccionRetro,
+    RetroNexus,
+    TipoAccion,
+    planear_retro,
+    validar_borrado,
+)
 from revisor.puertos.nexus import EscrituraNexus
 
 
 @dataclass(frozen=True, slots=True)
 class ResultadoCarga:
-    plan: PlanRetro
-    retro_id: int | None  # id de la retroalimentación vigente en NEXUS
-
-
-def aplicar_plan_retro(
-    escritura: EscrituraNexus, curso_id: int, elemento: Elemento, cuenta_id: int, plan: PlanRetro
-) -> int | None:
-    """Ejecuta las acciones del plan y devuelve el id de la retroalimentación que queda vigente."""
-    vigente: int | None = None
-    for accion in plan.acciones:
-        if accion.tipo is TipoAccion.ELIMINAR:
-            escritura.eliminar_retro(curso_id, elemento, accion.retro_id)
-        else:
-            vigente = escritura.guardar_retro(curso_id, elemento, cuenta_id, accion.texto, accion.retro_id)
-    return vigente
+    accion: AccionRetro
+    retro_id: int  # id de la retroalimentación vigente en NEXUS
 
 
 def subir_revision(
@@ -33,14 +26,29 @@ def subir_revision(
     elemento: Elemento,
     calificacion: CalificacionNexus,
     retros_existentes: Sequence[RetroNexus],
-    retro_validada: str,
-    *,
-    consolidar: bool = False,
+    retro_final: str,
 ) -> ResultadoCarga:
-    """Guarda la calificación y deja en NEXUS la retroalimentación validada (agrega, edita o no toca)."""
+    """Guarda la calificación y deja en NEXUS la retroalimentación final (la agrega, la edita o no la toca).
+
+    La retroalimentación se revisa antes de escribir nada: si hay más de una, no se sube ni la calificación.
+    """
+    accion = planear_retro(retros_existentes, retro_final)
     escritura.guardar_calificaciones(curso_id, elemento, [calificacion])
-    plan = planear_retro(retros_existentes, retro_validada, consolidar=consolidar)
-    vigente = aplicar_plan_retro(escritura, curso_id, elemento, calificacion.cuenta_id, plan)
-    if vigente is None and retros_existentes:
-        vigente = max(r.id for r in retros_existentes)
-    return ResultadoCarga(plan, vigente)
+    if accion.tipo is TipoAccion.NINGUNA:
+        return ResultadoCarga(accion, accion.retro_id)
+    retro_id = escritura.guardar_retro(
+        curso_id, elemento, calificacion.cuenta_id, accion.texto, accion.retro_id
+    )
+    return ResultadoCarga(accion, retro_id)
+
+
+def borrar_retro_elegida(
+    escritura: EscrituraNexus,
+    curso_id: int,
+    elemento: Elemento,
+    retros_existentes: Sequence[RetroNexus],
+    retro_id: int,
+) -> None:
+    """Borra la retroalimentación que el docente eligió cuando el alumno tenía más de una."""
+    validar_borrado(retros_existentes, retro_id)
+    escritura.eliminar_retro(curso_id, elemento, retro_id)
