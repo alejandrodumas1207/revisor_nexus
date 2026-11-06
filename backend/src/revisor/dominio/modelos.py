@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
 
+from revisor.dominio.retroalimentacion import RetroNexus
+
 
 class TipoElemento(StrEnum):
     EVIDENCIA = "evidencia"  # TipoElementoId 1 en NEXUS
@@ -74,4 +76,21 @@ class EntregaNexus:
     codigo_elemento: str
     archivos: tuple[Archivo, ...]
     calificacion_nexus: float | None  # escala 0-100 de NEXUS
-    retros_nexus: tuple[str, ...] = field(default=())
+    retros_nexus: tuple[RetroNexus, ...] = field(default=())
+
+
+@dataclass(frozen=True, slots=True)
+class NivelRubricaNexus:
+    """Nivel marcado en un criterio de la rúbrica de NEXUS (identificadores de ConsultarRubrica)."""
+
+    rubrica_id: int
+    criterio_id: int
+    nivel_dominio_id: int
+    criterio_nivel_dominio_id: int
+
+
+@dataclass(frozen=True, slots=True)
+class CalificacionNexus:
+    cuenta_id: int
+    valor: int  # escala 0-100 de NEXUS
+    rubrica: tuple[NivelRubricaNexus, ...] = ()
