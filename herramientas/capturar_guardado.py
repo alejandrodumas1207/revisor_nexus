@@ -8,6 +8,7 @@ de un alumno en NEXUS y cierra la ventana del navegador.
 """
 
 import json
+import shutil
 from datetime import datetime
 from pathlib import Path
 
@@ -15,9 +16,11 @@ from playwright.sync_api import Request, sync_playwright
 
 URL_NEXUS = "https://plataformanexus.uanl.mx"
 URL_API = "https://api.nexus.uanl.mx/WebApi/"
-# Reutiliza la sesión guardada por nexus_tools
-PERFIL = Path.home() / "Desktop" / "nexus_tools" / ".perfil_nexus"
-SALIDA = Path(__file__).resolve().parent.parent / "datos_locales" / "capturas"
+DATOS_LOCALES = Path(__file__).resolve().parent.parent / "datos_locales"
+# Copia del perfil de nexus_tools: abrirlo con otra versión de Chromium podría dejarlo inservible
+PERFIL_ORIGEN = Path.home() / "Desktop" / "nexus_tools" / ".perfil_nexus"
+PERFIL = DATOS_LOCALES / "perfil_nexus"
+SALIDA = DATOS_LOCALES / "capturas"
 LIMITE_CUERPO = 4000
 
 
@@ -38,7 +41,15 @@ def _registro(request: Request) -> dict[str, object]:
     }
 
 
+def _preparar_perfil() -> None:
+    if PERFIL.exists() or not PERFIL_ORIGEN.exists():
+        return
+    print("Copiando la sesión de nexus_tools (solo la primera vez)...")
+    shutil.copytree(PERFIL_ORIGEN, PERFIL, ignore=shutil.ignore_patterns("Singleton*", "*.lock", "lockfile"))
+
+
 def main() -> None:
+    _preparar_perfil()
     SALIDA.mkdir(parents=True, exist_ok=True)
     archivo = SALIDA / f"guardado_{datetime.now():%Y%m%d_%H%M%S}.jsonl"
     with sync_playwright() as p, archivo.open("w", encoding="utf-8") as destino:
