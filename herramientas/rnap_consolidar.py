@@ -14,6 +14,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 
 from revisor.dominio.calificacion import calificaciones_validas
+from revisor.dominio.instrumentos import CriterioPropio, NivelPropio, RubricaPropia
 from revisor.dominio.integridad import Tardanza, VeredictoCopia, calificacion_final
 
 CARPETA = Path(__file__).resolve().parent.parent / "datos_locales" / "rnap"
@@ -23,6 +24,12 @@ ENCABEZADO = PatternFill("solid", fgColor="1F3A5F")
 DIFERENCIA = PatternFill("solid", fgColor="FCE4D6")
 REVISAR = PatternFill("solid", fgColor="FFF2CC")
 NIVEL = {"cumple": "✓", "parcial": "½", "no_cumple": "✗"}
+NIVELES_LISTA = (
+    NivelPropio("Cumple", 100),
+    NivelPropio("Cumple parcialmente", 70),
+    NivelPropio("No cumple", 0),
+)
+INDICE_NIVEL = {"cumple": 0, "parcial": 1, "no_cumple": 2}
 # Las Evidencias (D4) usan en NEXUS rúbrica de 3 criterios con niveles 100/70/40/0; las D3 no tienen rúbrica
 RUBRICA_EVIDENCIA = calificaciones_validas(3, [100, 70, 40, 0])
 SIN_RUBRICA = calificaciones_validas(None, [])
@@ -43,11 +50,28 @@ def _ajustar(ws: Worksheet) -> None:
             celda.alignment = Alignment(wrap_text=True, vertical="top")
 
 
-def _final(actividad: str, a: dict[str, Any]) -> int:
+def _rubrica(rev: dict[str, Any]) -> RubricaPropia:
+    """La lista de cotejo como rúbrica del dominio: cumple 100 %, parcial 70 %, no cumple 0 %."""
+    criterios = tuple(
+        CriterioPropio(c["id"], c["criterio"], NIVELES_LISTA, peso=float(c["puntos"]))
+        for c in rev["lista_cotejo"]
+    )
+    return RubricaPropia(rev["actividad"], criterios)
+
+
+def _calificacion_lista(rubrica: RubricaPropia, a: dict[str, Any]) -> float:
+    """0-10 calculada con el dominio a partir de los niveles; sin archivo cuenta como 0."""
+    niveles = a.get("niveles") or {}
+    if not niveles:
+        return 0.0
+    return rubrica.calificar({c.id: INDICE_NIVEL[niveles.get(c.id, "no_cumple")] for c in rubrica.criterios})
+
+
+def _final(actividad: str, a: dict[str, Any], lista: float) -> int:
     validas = RUBRICA_EVIDENCIA if actividad.endswith("D4") else SIN_RUBRICA
     copia = a.get("copia") or "ninguna"
     return calificacion_final(
-        float(a.get("puntos_instrumento") or 0) / 10,
+        lista,
         validas,
         formato_incorrecto=bool(a.get("formato_incorrecto")),
         tardanza=Tardanza(a.get("tardanza") or "a tiempo"),
@@ -55,8 +79,11 @@ def _final(actividad: str, a: dict[str, Any]) -> int:
     )
 
 
-def _fila(actividad: str, a: dict[str, Any], ids: list[str]) -> tuple[list[Any], float | None, bool]:
-    final = _final(actividad, a)
+def _fila(
+    actividad: str, a: dict[str, Any], ids: list[str], rubrica: RubricaPropia
+) -> tuple[list[Any], float | None, bool]:
+    lista = _calificacion_lista(rubrica, a)
+    final = _final(actividad, a, lista)
     excel = a.get("calificacion_excel")
     dif = final - excel if isinstance(excel, int | float) else None
     entrego = bool(a.get("archivo"))
@@ -64,7 +91,7 @@ def _fila(actividad: str, a: dict[str, Any], ids: list[str]) -> tuple[list[Any],
     fila = [
         a.get("matricula"),
         a.get("nombre"),
-        round(float(a.get("puntos_instrumento") or 0) / 10, 1),
+        round(lista, 2),
         "−1" if a.get("formato_incorrecto") else "",
         a.get("tardanza") if entrego else "sin archivo",
         a.get("copia"),
@@ -98,8 +125,9 @@ def _hoja_actividad(wb: Workbook, rev: dict[str, Any]) -> dict[str, int]:
         [11, 28, 9, 8, 14, 14, 7, 7, 6] + [5] * len(ids) + [80, 50],
     )
     conteo = {"comparables": 0, "coinciden": 0}
+    rubrica = _rubrica(rev)
     for a in rev["alumnos"]:
-        fila, dif, revisar = _fila(rev["actividad"], a, ids)
+        fila, dif, revisar = _fila(rev["actividad"], a, ids, rubrica)
         ws.append(fila)
         relleno = REVISAR if revisar else DIFERENCIA if dif is not None and abs(dif) >= 2 else None
         if relleno:

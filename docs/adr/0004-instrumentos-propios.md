@@ -19,6 +19,14 @@ Las rúbricas de NEXUS no siempre están bien planteadas, y elementos como las D
 
 El docente elige calificar con la lista de cotejo en modo estricto: cada criterio se descuenta aunque la entrega esté completa (cifras que no salen de la tabla del alumno, respuestas genéricas o vacías, formato incorrecto). La prueba con RNAP E1-E2 mostró que la calificación previa, centrada en la entrega, coincidía con la lista estricta en solo 21 % a 53 % de los casos.
 
+### Niveles de las respuestas escritas (2026-11-06)
+
+Listas de 4 a 5 criterios. Cumple = 100 %, parcial = 70 %, no cumple = 0 %.
+
+- **No cumple:** respuesta vacía, huecos de plantilla sin llenar ("X grados", "t_rnn segundos") o texto genérico de IA que no se refiere a los resultados del alumno.
+- **Parcial:** razonamiento correcto con alguna cifra que no coincide con su cuaderno, o cita una cifra pero falta otra que se pedía.
+- **Cumple:** razonamiento correcto con cifras que salen de sus propios resultados.
+
 ## Consecuencias
 
 - El docente puede cambiar el instrumento a mitad de la revisión sin depender de cómo se configuró la rúbrica en NEXUS.
