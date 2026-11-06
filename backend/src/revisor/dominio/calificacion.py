@@ -19,7 +19,12 @@ class PoliticaAjuste(StrEnum):
     CERCANA = "cercana"  # en empate sube
 
 
-def ajustar_a_valida(valor: float, validas: Sequence[int], politica: PoliticaAjuste) -> int:
+POLITICA_POR_DEFECTO = PoliticaAjuste.ARRIBA  # decisión del docente: no perjudicar al alumno
+
+
+def ajustar_a_valida(
+    valor: float, validas: Sequence[int], politica: PoliticaAjuste = POLITICA_POR_DEFECTO
+) -> int:
     """Lleva una calificación de 0 a 10 a una que NEXUS pueda registrar."""
     if not validas:
         raise ValueError("No hay calificaciones válidas.")
