@@ -28,6 +28,6 @@ App personal para descargar, revisar con apoyo de IA y calificar entregas de NEX
 
 ## Datos
 
-- Entregas: `C:\Users\aleja\Desktop\NEXUS\AD2026\<Curso>\Entregas\Etapa N\<Elemento>\`, con la convención de `nexus_tools`.
-- Código de referencia (solo lectura): `C:\Users\aleja\Desktop\nexus_tools\nexus_lib\`.
-- Historial calificado a mano: `C:\Users\aleja\Desktop\RNAP_Revision_E1_E2\Revision_RNAP_E1_E2.xlsx`.
+- Entregas: `~\Desktop\NEXUS\AD2026\<Curso>\Entregas\Etapa N\<Elemento>\`, con la convención de `nexus_tools`.
+- Código de referencia (solo lectura): `~\Desktop\nexus_tools\nexus_lib\`.
+- Historial calificado a mano: `~\Desktop\RNAP_Revision_E1_E2\Revision_RNAP_E1_E2.xlsx`.

@@ -2,7 +2,7 @@
 
 ## Contexto
 
-Hoy `C:\Users\aleja\Desktop\nexus_tools` (Python + Playwright, v2.0) ya entra a NEXUS, descarga entregas por API y sube calificaciones por la interfaz. La revisión, que es la parte crítica, se limita a detectar firmas con OpenCV y reglas fijas (10/7/0). Las libretas, los notebooks `.ipynb` y los documentos quedan para revisión manual, y la retroalimentación detallada (por ejemplo `RNAP_Revision_E1_E2\Revision_RNAP_E1_E2.xlsx`) se hizo fuera de la app. Excel funciona como base de datos, no hay git, pruebas ni tipado, y `actualizar_maestro` mezcla responsabilidades.
+Hoy `~\Desktop\nexus_tools` (Python + Playwright, v2.0) ya entra a NEXUS, descarga entregas por API y sube calificaciones por la interfaz. La revisión, que es la parte crítica, se limita a detectar firmas con OpenCV y reglas fijas (10/7/0). Las libretas, los notebooks `.ipynb` y los documentos quedan para revisión manual, y la retroalimentación detallada (por ejemplo `RNAP_Revision_E1_E2\Revision_RNAP_E1_E2.xlsx`) se hizo fuera de la app. Excel funciona como base de datos, no hay git, pruebas ni tipado, y `actualizar_maestro` mezcla responsabilidades.
 
 Objetivo: una app personal que descargue, ayude a revisar con IA bajo tu control (rúbricas, listas de cotejo y casos particulares que aprende de tus correcciones) y suba calificación y retroalimentación, con etapas que corren en paralelo y una estructura auditable.
 
@@ -14,7 +14,7 @@ Decisiones tomadas contigo:
 
 ## Ubicación y reutilización
 
-Proyecto nuevo en `C:\Users\aleja\Desktop\revisor_nexus\`. `nexus_tools` queda intacto como respaldo hasta terminar la fase 5. Los datos siguen en `Desktop\NEXUS\AD2026\` con la misma convención de carpetas, así no se descarga nada dos veces.
+Proyecto nuevo en `~\Desktop\revisor_nexus\`. `nexus_tools` queda intacto como respaldo hasta terminar la fase 5. Los datos siguen en `Desktop\NEXUS\AD2026\` con la misma convención de carpetas, así no se descarga nada dos veces.
 
 Código que se porta (refactorizado, con tipos y pruebas):
 - `nexus_lib/sesion.py`: captura de encabezados `Token/AreaAcademicaId/RolId/SistemaId`, login único con keyring, perfil persistente `.perfil_nexus`.
