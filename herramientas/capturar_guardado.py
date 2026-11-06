@@ -53,8 +53,9 @@ def main() -> None:
     SALIDA.mkdir(parents=True, exist_ok=True)
     archivo = SALIDA / f"guardado_{datetime.now():%Y%m%d_%H%M%S}.jsonl"
     with sync_playwright() as p, archivo.open("w", encoding="utf-8") as destino:
+        # Sin viewport fijo: la página usa el tamaño real de la ventana y el zoom funciona
         ctx = p.chromium.launch_persistent_context(
-            str(PERFIL), headless=False, viewport={"width": 1200, "height": 900}
+            str(PERFIL), headless=False, no_viewport=True, args=["--start-maximized"]
         )
         page = ctx.pages[0] if ctx.pages else ctx.new_page()
 

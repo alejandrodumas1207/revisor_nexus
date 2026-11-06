@@ -6,8 +6,30 @@ Portado de nexus_tools/nexus_lib/maestro.py (calificaciones_validas, combinacion
 import itertools
 from collections.abc import Sequence
 from dataclasses import dataclass
+from enum import StrEnum
 
 _TOLERANCIA = 1e-9
+
+
+class PoliticaAjuste(StrEnum):
+    """Qué hacer cuando la calificación del instrumento no se puede registrar en NEXUS."""
+
+    ARRIBA = "arriba"
+    ABAJO = "abajo"
+    CERCANA = "cercana"  # en empate sube
+
+
+def ajustar_a_valida(valor: float, validas: Sequence[int], politica: PoliticaAjuste) -> int:
+    """Lleva una calificación de 0 a 10 a una que NEXUS pueda registrar."""
+    if not validas:
+        raise ValueError("No hay calificaciones válidas.")
+    if politica is PoliticaAjuste.ARRIBA:
+        mayores = [v for v in validas if v + _TOLERANCIA >= valor]
+        return min(mayores) if mayores else max(validas)
+    if politica is PoliticaAjuste.ABAJO:
+        menores = [v for v in validas if v - _TOLERANCIA <= valor]
+        return max(menores) if menores else min(validas)
+    return min(validas, key=lambda v: (abs(v - valor), -v))
 
 
 @dataclass(frozen=True, slots=True)
