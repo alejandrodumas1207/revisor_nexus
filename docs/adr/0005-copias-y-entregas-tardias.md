@@ -24,7 +24,8 @@ En RNAP E1-E2 hubo copias confirmadas y varios alumnos con 0 por "no se registr�
 - **Entrega tardía.** Se acepta. La penalización queda configurable en puntos y por ahora vale 0.
   - Para saber si una entrega es tardía se usa primero la marca `Extemporanea` de NEXUS.
   - Cuando la entrega llega por formulario, se compara la fecha del archivo con la fecha límite del elemento. Si la fecha límite se movió, se usa como referencia la fecha que concentra a la mayoría de las entregas.
-- **Orden de cálculo:** instrumento, luego tardanza, luego copia y al final el ajuste a una calificación válida de NEXUS (hacia arriba). Está en `dominio/integridad.py`.
+- **Formato de entrega.** No es criterio de la lista de cotejo. Entregar otro tipo de archivo (.txt, .pdf, .zip en lugar de .ipynb) resta 1 punto de 10, una cantidad simbólica que se nota en NEXUS. Un nombre de archivo incorrecto no se penaliza; solo se avisa en la retroalimentación.
+- **Orden de cálculo:** instrumento, luego formato, luego tardanza, luego copia y al final el ajuste a una calificación válida de NEXUS (hacia arriba). Está en `dominio/integridad.py`.
 
 ## Consecuencias
 

@@ -22,6 +22,15 @@ def test_copia_con_rubrica_nexus_sube_a_valida():
     assert calificacion_final(7.0, RUBRICA_3, copia=VeredictoCopia.CONFIRMADA) == 4
 
 
+def test_formato_incorrecto_resta_un_punto():
+    assert calificacion_final(10.0, SIN_RUBRICA, formato_incorrecto=True) == 9
+
+
+def test_formato_con_rubrica_nexus_puede_absorberse_al_subir_a_valida():
+    # 4 − 1 = 3 no se puede registrar con tres criterios; sube a 4 (política hacia arriba)
+    assert calificacion_final(4.0, RUBRICA_3, formato_incorrecto=True) == 4
+
+
 def test_tardia_sin_penalizacion_por_ahora():
     assert calificacion_final(8.0, SIN_RUBRICA, tardia=True) == 8
 
