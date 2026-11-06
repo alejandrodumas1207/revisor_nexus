@@ -33,6 +33,10 @@ revisar: lint tipos test auditar
 clave:
     cd backend; uv run python ../herramientas/guardar_clave.py
 
+# Comprueba que Google acepta la clave guardada, sin mostrarla
+verificar-clave:
+    cd backend; uv run python ../herramientas/verificar_clave.py
+
 # Registra lo que NEXUS envía al guardar una calificación (fase 0)
 capturar:
     cd backend; uv run python ../herramientas/capturar_guardado.py
