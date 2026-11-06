@@ -59,13 +59,14 @@ def _fila(actividad: str, a: dict[str, Any], ids: list[str]) -> tuple[list[Any],
     final = _final(actividad, a)
     excel = a.get("calificacion_excel")
     dif = final - excel if isinstance(excel, int | float) else None
-    revisar = a.get("copia") == "probable" or a.get("tardanza") == "dudosa"
+    entrego = bool(a.get("archivo"))
+    revisar = a.get("copia") == "probable" or (entrego and a.get("tardanza") == "dudosa")
     fila = [
         a.get("matricula"),
         a.get("nombre"),
         round(float(a.get("puntos_instrumento") or 0) / 10, 1),
         "−1" if a.get("formato_incorrecto") else "",
-        a.get("tardanza"),
+        a.get("tardanza") if entrego else "sin archivo",
         a.get("copia"),
         final,
         excel,
@@ -175,7 +176,7 @@ def _resumen(wb: Workbook, revisiones: list[dict[str, Any]]) -> None:
                 sum(1 for c in rev.get("copias", []) if c["veredicto"] == "copia confirmada"),
                 sum(1 for c in rev.get("copias", []) if c["veredicto"] == "probable"),
                 sum(1 for a in alumnos if a.get("tardanza") == "tardía confirmada"),
-                sum(1 for a in alumnos if a.get("tardanza") == "dudosa"),
+                sum(1 for a in alumnos if a.get("tardanza") == "dudosa" and a.get("archivo")),
                 rev.get("notas_para_profesor"),
             ]
         )
