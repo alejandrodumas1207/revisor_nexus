@@ -73,6 +73,19 @@ def test_verificacion_y_resumen():
     assert r.resumen == {"actividad": "E1D3", "matricula": "2012345", "mejor_maxlen": "9", "codigo_ok": "6/7"}
 
 
+def test_respuesta_con_separador_borrado():
+    celdas = [
+        _celda_md(
+            "### RESPUESTA E1D4-01\n\n**Pregunta.** ¿Cuántas reseñas hay?\n"
+            "Tiene 3000 reseñas.\n\nMitad y mitad."
+        ),
+        _celda_md("### RESPUESTA E1D4-02\n\n**Pregunta.** ¿Y la etiqueta?\n"),
+    ]
+    r = leer_notebook(json.dumps({"cells": celdas}).encode())
+    assert r.respuestas["E1D4-01"] == "Tiene 3000 reseñas.\n\nMitad y mitad."
+    assert r.respuestas_vacias == ["E1D4-02"]
+
+
 def test_plantilla_etapa_2():
     celdas = [
         _celda_md("## Pregunta - 3\nExplica por qué no se reacomodan los datos."),

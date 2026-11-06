@@ -109,9 +109,20 @@ def _respuestas(celdas: list[dict[str, Any]]) -> dict[str, str]:
         m = _RESPUESTA.search(fuente)
         if not m:
             continue
-        partes = _SEPARADOR.split(fuente, maxsplit=1)
-        respuestas[m.group(1)] = partes[1].strip() if len(partes) == 2 else ""
+        respuestas[m.group(1)] = _texto_respuesta(fuente)
     return respuestas
+
+
+def _texto_respuesta(fuente: str) -> str:
+    """Texto debajo del separador. Si el alumno lo borró, lo que sigue a la línea de la pregunta."""
+    partes = _SEPARADOR.split(fuente, maxsplit=1)
+    if len(partes) == 2:
+        return partes[1].strip()
+    lineas = _RESPUESTA.sub("", fuente, count=1).strip().splitlines()
+    inicio = next((i for i, ln in enumerate(lineas) if ln.lstrip().startswith("**Pregunta")), None)
+    if inicio is None:
+        return ""
+    return "\n".join(lineas[inicio + 1 :]).strip()
 
 
 def _bloques(codigo: list[dict[str, Any]]) -> dict[str, BloqueCodigo]:
