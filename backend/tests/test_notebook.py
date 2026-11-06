@@ -86,6 +86,18 @@ def test_respuesta_con_separador_borrado():
     assert r.respuestas_vacias == ["E1D4-02"]
 
 
+def test_respuesta_en_celda_agregada():
+    celdas = [
+        _celda_md("### RESPUESTA E1D3-08\n\n--- ESCRIBE TU RESPUESTA DEBAJO DE ESTA LINEA ---\n"),
+        _celda_md("El estado oculto olvida los primeros tokens."),
+        _celda_md("### RESPUESTA E1D3-09\n\n--- ESCRIBE TU RESPUESTA DEBAJO DE ESTA LINEA ---\n"),
+        _celda_md("## 7 · Verificación"),
+    ]
+    r = leer_notebook(json.dumps({"cells": celdas}).encode())
+    assert r.respuestas["E1D3-08"] == "El estado oculto olvida los primeros tokens."
+    assert r.respuestas_vacias == ["E1D3-09"]
+
+
 def test_plantilla_etapa_2():
     celdas = [
         _celda_md("## Pregunta - 3\nExplica por qué no se reacomodan los datos."),

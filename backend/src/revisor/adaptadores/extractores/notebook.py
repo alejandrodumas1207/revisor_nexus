@@ -102,15 +102,26 @@ def _primero(patron: re.Pattern[str], texto: str) -> str:
 
 def _respuestas(celdas: list[dict[str, Any]]) -> dict[str, str]:
     respuestas: dict[str, str] = {}
-    for c in celdas:
+    for i, c in enumerate(celdas):
         if c.get("cell_type") != "markdown":
             continue
         fuente = _texto(c.get("source"))
         m = _RESPUESTA.search(fuente)
         if not m:
             continue
-        respuestas[m.group(1)] = _texto_respuesta(fuente)
+        respuestas[m.group(1)] = _texto_respuesta(fuente) or _celdas_agregadas(celdas[i + 1 :])
     return respuestas
+
+
+def _celdas_agregadas(siguientes: list[dict[str, Any]]) -> str:
+    """Celdas de texto que el alumno agregó debajo de la pregunta, hasta el siguiente título o código."""
+    partes: list[str] = []
+    for c in siguientes:
+        fuente = _texto(c.get("source")).strip()
+        if c.get("cell_type") != "markdown" or fuente.startswith("#"):
+            break
+        partes.append(fuente)
+    return "\n\n".join(p for p in partes if p)
 
 
 def _texto_respuesta(fuente: str) -> str:
