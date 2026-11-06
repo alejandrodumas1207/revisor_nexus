@@ -8,6 +8,7 @@ de un alumno en NEXUS y cierra la ventana del navegador.
 """
 
 import json
+import re
 import shutil
 from datetime import datetime
 from pathlib import Path
@@ -28,6 +29,13 @@ def _es_lectura(ruta: str) -> bool:
     return "/Consultar" in ruta or ruta.startswith("Seguridad/")
 
 
+_TOKEN = re.compile(r'"Token"\s*:\s*"[^"]*"')
+
+
+def _sin_token(texto: str) -> str:
+    return _TOKEN.sub('"Token":"***"', texto)
+
+
 def _registro(request: Request) -> dict[str, object]:
     ruta = request.url.removeprefix(URL_API)
     respuesta = request.response()
@@ -37,7 +45,7 @@ def _registro(request: Request) -> dict[str, object]:
         "ruta": ruta,
         "cuerpo": (request.post_data or "")[:LIMITE_CUERPO],
         "estado": respuesta.status if respuesta else None,
-        "respuesta": (respuesta.text()[:LIMITE_CUERPO] if respuesta else ""),
+        "respuesta": (_sin_token(respuesta.text())[:LIMITE_CUERPO] if respuesta else ""),
     }
 
 
