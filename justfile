@@ -29,6 +29,10 @@ auditar:
 # Todo lo que corre la integración continua
 revisar: lint tipos test auditar
 
+# Guarda la clave de Gemini en el administrador de credenciales de Windows
+clave:
+    cd backend; uv run python ../herramientas/guardar_clave.py
+
 # Registra lo que NEXUS envía al guardar una calificación (fase 0)
 capturar:
     cd backend; uv run python ../herramientas/capturar_guardado.py
