@@ -66,7 +66,7 @@ def _entregas(act: Actividad) -> list[Entrega]:
     for archivo in sorted(f for c in carpetas for f in c.rglob("*") if f.is_file()):
         formato = revisar_formato(archivo.name, act.prefijo)
         reporte, extra = _leer(archivo)
-        obs = [*formato.observaciones, *extra]
+        obs = [*formato.penalizables, *extra, *(f"(solo aviso) {a}" for a in formato.avisos)]
         mat = (reporte.matricula if reporte else "") or formato.matricula_en_nombre
         if reporte and formato.matricula_en_nombre and reporte.matricula != formato.matricula_en_nombre:
             obs.append(

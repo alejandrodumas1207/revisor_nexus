@@ -20,16 +20,22 @@ def test_notebook_guardado_como_txt():
     assert not r.correcto
 
 
+def test_tipo_de_archivo_incorrecto_se_penaliza():
+    r = revisar_formato("Tarea 1 - Ana Perez.pdf", "E1_D3")
+    assert any("Entregó .pdf" in p for p in r.penalizables)
+
+
 @pytest.mark.parametrize(
     ("nombre", "fragmento"),
     [
-        ("Tarea 1 - Ana Perez.pdf", "Entregó .pdf"),
-        ("Tarea 1 - Ana Perez.pdf", "no inicia con E1_D3"),
-        ("E1_D3_Perez - Ana Perez.ipynb", "no incluye la matrícula"),
+        ("Tarea 1 - Ana Perez.ipynb", "debe iniciar con E1_D3"),
+        ("E1_D3_Perez - Ana Perez.ipynb", "debe incluir tu matrícula"),
     ],
 )
-def test_observaciones_de_formato(nombre, fragmento):
-    assert any(fragmento in o for o in revisar_formato(nombre, "E1_D3").observaciones)
+def test_nombre_incorrecto_solo_avisa(nombre, fragmento):
+    r = revisar_formato(nombre, "E1_D3")
+    assert r.correcto
+    assert any(fragmento in a for a in r.avisos)
 
 
 def test_codigo_igual_con_otros_comentarios_y_espacios():

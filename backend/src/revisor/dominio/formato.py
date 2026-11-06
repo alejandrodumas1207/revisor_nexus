@@ -1,4 +1,8 @@
-"""Revisión del formato de entrega: tipo de archivo y nombre según la convención pedida."""
+"""Revisión del formato de entrega.
+
+Se penaliza el tipo de archivo (debe ser el pedido, por ejemplo .ipynb y no .txt, .pdf o .zip).
+El nombre del archivo no se penaliza: si no sigue la convención, solo se avisa en la retroalimentación.
+"""
 
 import re
 from dataclasses import dataclass
@@ -14,11 +18,12 @@ class RevisionFormato:
     nombre_original: str
     extension: str
     matricula_en_nombre: str
-    observaciones: tuple[str, ...]
+    penalizables: tuple[str, ...]  # descuentan en el criterio de formato
+    avisos: tuple[str, ...]  # solo van a la retroalimentación
 
     @property
     def correcto(self) -> bool:
-        return not self.observaciones
+        return not self.penalizables
 
 
 def nombre_antes_de_forms(nombre: str) -> str:
@@ -27,19 +32,20 @@ def nombre_antes_de_forms(nombre: str) -> str:
 
 
 def revisar_formato(nombre_archivo: str, prefijo: str, extension: str = ".ipynb") -> RevisionFormato:
-    """Compara el nombre entregado con la convención `{prefijo}..._{matrícula}_{Apellido}{extension}`."""
+    """Compara el archivo entregado con el tipo pedido y con la convención `{prefijo}..._{matrícula}...`."""
     original = nombre_antes_de_forms(nombre_archivo)
     ruta = PurePath(original)
     ext = "".join(ruta.suffixes[-2:]) if ruta.suffix == ".txt" else ruta.suffix
     matricula = _primera_matricula(original)
-    observaciones: list[str] = []
+    penalizables: list[str] = []
     if ext.lower() != extension:
-        observaciones.append(f"Entregó {ext or 'sin extensión'} en lugar de {extension}.")
+        penalizables.append(f"Entregó {ext or 'sin extensión'} en lugar de {extension}.")
+    avisos: list[str] = []
     if not original.upper().startswith(prefijo.upper()):
-        observaciones.append(f"El nombre no inicia con {prefijo}.")
+        avisos.append(f"El nombre del archivo debe iniciar con {prefijo}.")
     if not matricula:
-        observaciones.append("El nombre no incluye la matrícula.")
-    return RevisionFormato(original, ext, matricula, tuple(observaciones))
+        avisos.append("El nombre del archivo debe incluir tu matrícula.")
+    return RevisionFormato(original, ext, matricula, tuple(penalizables), tuple(avisos))
 
 
 def _primera_matricula(texto: str) -> str:
