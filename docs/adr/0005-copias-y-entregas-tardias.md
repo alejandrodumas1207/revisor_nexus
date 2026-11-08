@@ -17,6 +17,11 @@ En RNAP E1-E2 hubo copias confirmadas y varios alumnos con 0 por "no se registr�
   - errores idiosincrásicos compartidos: las mismas faltas de ortografía, espacios dobles, signos mal puestos, nombres de variables raros o residuos de código idénticos;
   - datos de otro alumno dentro del archivo (matrícula, nombre o salidas que no corresponden).
 
+  Valores iguales (2026-11-08). Las plantillas fijan la semilla aleatoria, así que con las mismas decisiones los resultados salen idénticos:
+  - Resultados obtenidos con semilla fija (exactitudes, parámetros, conteos) nunca son evidencia, salvo que el alumno cite un número que no sale de su cuaderno y sí del de otro.
+  - Decisiones libres (valores elegidos, recomendaciones): se cuenta cuántos alumnos del grupo comparten cada valor (`valores_compartidos`). Con 3 o más es una opción guiada por la actividad y no cuenta; compartida solo por el par, o con un detalle raro (orden, formato, mismo error), sí es indicio.
+  - La redacción sigue siendo el indicador principal.
+
   Veredictos (2026-11-08), según gravedad y certeza:
   - **Copia confirmada:** copió todo o casi todo (palabra por palabra, o los mismos datos y errores en muchas partes). × 0.5.
   - **Copia parcial:** casi seguro que copió una parte, aunque sea poca o parafraseada (una o dos respuestas). × 0.75.

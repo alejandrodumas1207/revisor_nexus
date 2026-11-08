@@ -199,15 +199,24 @@ def _hoja_copias(wb: Workbook, revisiones: list[dict[str, Any]]) -> None:
     ws = wb.create_sheet("Copias")
     _encabezado(
         ws,
-        ["Actividad", "Alumno A", "Alumno B", "Veredicto", "Coincidencias", "Decisión del docente"],
-        [10, 11, 11, 18, 100, 20],
+        [
+            "Actividad",
+            "Alumno A",
+            "Alumno B",
+            "Veredicto",
+            "Explicación",
+            "Coincidencias",
+            "Decisión del docente",
+        ],
+        [10, 11, 11, 16, 60, 80, 20],
     )
     for rev in revisiones:
         for c in sorted(
             rev.get("copias", []), key=lambda c: _ORDEN_COPIA[VeredictoCopia.desde_texto(c["veredicto"])]
         ):
             detalle = "\n".join(f"• {x['ubicacion']}: {x['detalle']}" for x in c.get("coincidencias", []))
-            ws.append([rev["actividad"], c["a"], c["b"], c["veredicto"], detalle, ""])
+            veredicto = VeredictoCopia.desde_texto(c["veredicto"]).value
+            ws.append([rev["actividad"], c["a"], c["b"], veredicto, c.get("explicacion", ""), detalle, ""])
     _ajustar(ws)
 
 

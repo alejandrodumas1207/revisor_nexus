@@ -1,7 +1,12 @@
 import pytest
 
 from revisor.dominio.formato import nombre_antes_de_forms, revisar_formato
-from revisor.dominio.similitud import normalizar_codigo, normalizar_texto, pares_similares
+from revisor.dominio.similitud import (
+    normalizar_codigo,
+    normalizar_texto,
+    pares_similares,
+    valores_compartidos,
+)
 
 
 def test_quita_sufijo_de_forms():
@@ -48,3 +53,22 @@ def test_textos_distintos_no_se_marcan():
     a = normalizar_texto("La exactitud sube de 0.52 a 0.75 cuando aumenta maxlen hasta nueve tokens")
     b = normalizar_texto("Recomendaría doce tokens y cinco épocas porque tarda poco y no sobreajusta")
     assert pares_similares({"a": a, "b": b}, umbral=0.2) == []
+
+
+def test_decision_comun_no_es_evidencia():
+    decisiones = {
+        "a": "[1, 2, 4, 8, 9, 11]",
+        "b": "[1, 2, 4, 8, 9, 11]",
+        "c": "[1, 2, 4, 8, 9, 11]",
+        "d": "x",
+    }
+    grupo = valores_compartidos(decisiones)[0]
+    assert grupo.alumnos == ("a", "b", "c")
+    assert not grupo.es_evidencia
+
+
+def test_decision_rara_compartida_por_un_par_es_evidencia():
+    decisiones = {"a": "[1, 2, 4, 8, 7, 12]", "b": "[1, 2, 4, 8, 7, 12]", "c": "[1, 2, 4, 8, 9, 11]"}
+    grupos = valores_compartidos(decisiones)
+    assert [g.alumnos for g in grupos] == [("a", "b")]
+    assert grupos[0].es_evidencia

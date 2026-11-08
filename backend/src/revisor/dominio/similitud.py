@@ -46,3 +46,32 @@ def pares_similares(tokens: Mapping[str, list[str]], umbral: float, n: int = 5) 
         if (s := jaccard(conjuntos[a], conjuntos[b])) >= umbral
     ]
     return sorted(pares, key=lambda p: p.similitud, reverse=True)
+
+
+@dataclass(frozen=True, slots=True)
+class ValorCompartido:
+    valor: str
+    alumnos: tuple[str, ...]
+
+    @property
+    def es_evidencia(self) -> bool:
+        """Solo un valor compartido por pocos alumnos es indicio; si lo eligieron muchos, es opción común."""
+        return len(self.alumnos) <= MAXIMO_RARO
+
+
+MAXIMO_RARO = 2  # con 3 o más alumnos eligiendo lo mismo, la actividad lo está guiando
+
+
+def valores_compartidos(decisiones: Mapping[str, str]) -> list[ValorCompartido]:
+    """Agrupa una decisión libre (valor elegido por cada alumno) y dice qué tan común es cada valor.
+
+    Los resultados obtenidos con semilla fija no se pasan aquí: con las mismas decisiones salen idénticos.
+    """
+    grupos: dict[str, list[str]] = {}
+    for alumno, valor in decisiones.items():
+        if valor.strip():
+            grupos.setdefault(valor.strip(), []).append(alumno)
+    return sorted(
+        (ValorCompartido(v, tuple(sorted(a))) for v, a in grupos.items() if len(a) > 1),
+        key=lambda g: len(g.alumnos),
+    )
