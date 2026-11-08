@@ -55,6 +55,7 @@ class ReporteNotebook:
     errores: tuple[str, ...]
     verificacion: tuple[tuple[bool, str], ...]
     resumen: dict[str, str] = field(default_factory=dict[str, str])
+    salidas: str = ""  # texto de todas las salidas, para verificar las cifras citadas
 
     @property
     def respuestas_vacias(self) -> list[str]:
@@ -86,6 +87,7 @@ def leer_notebook(contenido: bytes) -> ReporteNotebook:
             (m.group(1).upper() == "OK", m.group(2).strip()) for m in _VERIFICACION.finditer(salidas)
         ),
         resumen=_resumen(salidas),
+        salidas=salidas,
     )
 
 

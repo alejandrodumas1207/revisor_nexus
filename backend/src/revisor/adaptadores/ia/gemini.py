@@ -8,13 +8,13 @@ import keyring
 from google import genai
 from google.genai import errors, types
 
+from revisor.puertos.ia import CuotaAgotada, IANoDisponible
+
 SERVICIO, CUENTA = "revisor_nexus", "gemini_api_key"
 MODELO_POR_DEFECTO = "gemini-3.5-flash"
+# Modelos gratuitos con cuota diaria propia (sin Lite). "gemini-3.5-flash" se cobra a la cuota de 3.6.
+MODELOS_ROTACION = ("gemini-3.5-flash", "gemini-3.7-flash", "gemini-3.8-flash", "gemini-3-flash-preview")
 _REINTENTABLES = {429, 500, 503}  # cuota por minuto agotada o servicio saturado
-
-
-class GeminiNoDisponible(RuntimeError):
-    """No hay clave guardada o Gemini no respondió tras los reintentos."""
 
 
 class ProveedorGemini:
@@ -23,7 +23,7 @@ class ProveedorGemini:
     ) -> None:
         clave = keyring.get_password(SERVICIO, CUENTA)
         if not clave:
-            raise GeminiNoDisponible("No hay clave de Gemini guardada. Usa `just clave`.")
+            raise IANoDisponible("No hay clave de Gemini guardada. Usa `just clave`.")
         self._cliente = genai.Client(api_key=clave)
         self._modelo = modelo
         self._reintentos = reintentos
@@ -47,7 +47,9 @@ class ProveedorGemini:
                 )
                 return json.loads(respuesta.text or "{}")
             except errors.APIError as e:
+                if e.code == 429 and "PerDay" in str(e):
+                    raise CuotaAgotada(f"Se agotó la cuota diaria de {self._modelo}.") from e
                 if e.code not in _REINTENTABLES or intento == self._reintentos:
-                    raise GeminiNoDisponible(f"Gemini respondió {e.code}: {str(e)[:200]}") from e
+                    raise IANoDisponible(f"{self._modelo} respondió {e.code}: {str(e)[:200]}") from e
                 time.sleep(self._espera_base * (2**intento))
-        raise GeminiNoDisponible("Gemini no respondió.")
+        raise IANoDisponible(f"{self._modelo} no respondió.")

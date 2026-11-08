@@ -75,3 +75,16 @@ def test_criterio_faltante_se_rechaza():
     respuesta["criterios"] = respuesta["criterios"][:1]
     with pytest.raises(EvaluacionInvalida, match="C2"):
         revisar_entrega(ProveedorFalso(respuesta), LISTA, "E1D3", "x")
+
+
+def test_verificacion_automatica_va_al_final_de_la_entrega():
+    proveedor = ProveedorFalso(_respuesta())
+    revisar_entrega(proveedor, LISTA, "E1D3", "texto", {"E1D3-06": ["0.38", "0.52"]})
+    assert proveedor.recibido is not None
+    assert proveedor.recibido[1].endswith("NO aparecen en sus salidas:\n- E1D3-06: 0.38, 0.52")
+
+
+def test_verificacion_sin_faltantes():
+    proveedor = ProveedorFalso(_respuesta())
+    revisar_entrega(proveedor, LISTA, "E1D3", "texto", {})
+    assert proveedor.recibido is not None and "todas las cifras citadas" in proveedor.recibido[1]
