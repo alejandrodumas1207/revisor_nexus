@@ -1,8 +1,8 @@
 """Retroalimentación detallada para el alumno: desglose por criterio, ajustes y calificación en NEXUS.
 
 La estructura y los números los pone el código, así siempre cuadran con la calificación registrada.
-Los comentarios (qué hizo bien, qué falta, por qué hay sospecha de copia) vienen de la revisión.
-Nunca se nombra a otro alumno: una copia se describe como coincidencia con la entrega de un compañero.
+Los apartados son por criterio: en cada uno, lo que está bien y lo que falta. Al final, comentarios
+generales opcionales; la copia o sospecha se explica ahí con el nombre del compañero y el motivo.
 """
 
 from dataclasses import dataclass
@@ -12,9 +12,9 @@ from revisor.dominio.integridad import DetalleCalificacion, VeredictoCopia
 NOMBRE_NIVEL = {"cumple": "cumple", "parcial": "cumple parcialmente", "no_cumple": "no cumple"}
 FACTOR_NIVEL = {"cumple": 1.0, "parcial": 0.7, "no_cumple": 0.0}
 _TITULO_COPIA = {
-    VeredictoCopia.CONFIRMADA: "Copia confirmada",
-    VeredictoCopia.PARCIAL: "Copia parcial",
-    VeredictoCopia.SOSPECHA: "Sospecha de copia (sin descuento)",
+    VeredictoCopia.CONFIRMADA: "Copia confirmada (calificación × 0.5)",
+    VeredictoCopia.PARCIAL: "Copia parcial (calificación × 0.75)",
+    VeredictoCopia.SOSPECHA: "Sospecha de copia (sin penalización)",
 }
 
 
@@ -24,7 +24,7 @@ class CriterioEvaluado:
     nombre: str
     puntos: float
     nivel: str  # cumple | parcial | no_cumple
-    comentario: str
+    comentario: str  # lo que está bien y lo que falta en este criterio
 
     @property
     def obtenidos(self) -> float:
@@ -35,9 +35,9 @@ class CriterioEvaluado:
 class InformeAlumno:
     criterios: tuple[CriterioEvaluado, ...]
     detalle: DetalleCalificacion
-    fortalezas: str
-    pendientes: str
+    comentarios_generales: str = ""  # opcional
     copia: VeredictoCopia = VeredictoCopia.NINGUNA
+    copia_con: tuple[str, ...] = ()  # "Nombre Apellido (matrícula)" de cada compañero involucrado
     justificacion_copia: str = ""
     avisos: tuple[str, ...] = ()
 
@@ -47,13 +47,10 @@ def componer_retroalimentacion(informe: InformeAlumno) -> str:
         f"Calificación en NEXUS: {informe.detalle.final}",
         _desglose(informe),
         _ajustes(informe.detalle),
-        f"Lo que hiciste bien: {informe.fortalezas.strip()}",
-        f"Lo que falta o hay que corregir: {informe.pendientes.strip()}",
     ]
-    if informe.copia in _TITULO_COPIA:
-        partes.append(f"{_TITULO_COPIA[informe.copia]}: {informe.justificacion_copia.strip()}")
-    if informe.avisos:
-        partes.append("Para la próxima entrega: " + " ".join(a.strip() for a in informe.avisos))
+    generales = _comentarios_generales(informe)
+    if generales:
+        partes.append(generales)
     return "\n\n".join(partes)
 
 
@@ -81,3 +78,14 @@ def _ajustes(detalle: DetalleCalificacion) -> str:
     lineas = ["Ajustes:"]
     lineas += [f"• {p.descripcion} → {_numero(p.valor)}" for p in detalle.pasos]
     return "\n".join(lineas)
+
+
+def _comentarios_generales(informe: InformeAlumno) -> str:
+    lineas: list[str] = []
+    if informe.copia in _TITULO_COPIA:
+        con = f" con {', '.join(informe.copia_con)}" if informe.copia_con else ""
+        lineas.append(f"• {_TITULO_COPIA[informe.copia]}{con}: {informe.justificacion_copia.strip()}")
+    if informe.comentarios_generales.strip():
+        lineas.append(f"• {informe.comentarios_generales.strip()}")
+    lineas += [f"• Para la próxima entrega: {a.strip()}" for a in informe.avisos]
+    return "\n".join(["Comentarios generales:", *lineas]) if lineas else ""

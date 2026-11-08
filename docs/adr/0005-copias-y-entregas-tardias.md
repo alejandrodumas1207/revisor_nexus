@@ -25,10 +25,10 @@ En RNAP E1-E2 hubo copias confirmadas y varios alumnos con 0 por "no se registr�
   Veredictos (2026-11-08), según gravedad y certeza:
   - **Copia confirmada:** copió todo o casi todo (palabra por palabra, o los mismos datos y errores en muchas partes). × 0.5.
   - **Copia parcial:** casi seguro que copió una parte, aunque sea poca o parafraseada (una o dos respuestas). × 0.75.
-  - **Sospecha:** similitudes que pueden explicarse por coincidencia, por haber hablado entre ellos o por la plantilla (por ejemplo, el mismo valor erróneo y una recomendación común). Sin descuento; se menciona al alumno y el docente decide.
+  - **Sospecha:** similitudes que pueden explicarse por coincidencia, por haber hablado entre ellos o por la plantilla (por ejemplo, el mismo valor erróneo y una recomendación común). Sin penalización; se menciona al alumno con el nombre del compañero y el motivo, y el docente decide.
   - **Coincidencia por plantilla:** no es copia y no se muestra.
 
-  El factor se aplica después de evaluar con la lista. La retroalimentación explica el veredicto con evidencia concreta, sin nombrar al otro alumno.
+  El factor se aplica después de evaluar con la lista. La retroalimentación explica el veredicto en los comentarios generales: con quién (nombre y matrícula) y por qué, con evidencia concreta.
 
 - **Entrega tardía.** Se acepta y resta 1 punto de 10, **solo cuando la tardanza es segura** (`Tardanza.CONFIRMADA`). Si hay duda (por ejemplo, la fecha límite se movió y no se sabe cuál regía), la entrega queda como `DUDOSA`: no se penaliza y se le muestra al docente para que decida.
   - Para saber si una entrega es tardía se usa primero la marca `Extemporanea` de NEXUS.

@@ -36,7 +36,7 @@ Listas de 4 a 5 criterios. Cumple = 100 %, parcial = 70 %, no cumple = 0 %.
 
 ### Retroalimentación al alumno (2026-11-08)
 
-La arma el código (`dominio/informe.py`) con siempre los mismos apartados: calificación en NEXUS; desglose por criterio con puntos obtenidos, nivel y comentario; total de la lista; ajustes paso a paso (formato, tardanza, copia, ajuste a NEXUS); lo que hizo bien; lo que falta; copia o sospecha con su justificación; avisos para la próxima entrega. La revisión (IA, auditada por el docente) solo aporta los comentarios.
+La arma el código (`dominio/informe.py`): calificación en NEXUS; un apartado por criterio con puntos obtenidos, nivel y comentario (lo que está bien y lo que falta en ese criterio); total de la lista; ajustes paso a paso (formato, tardanza, copia, ajuste a NEXUS); y, si hacen falta, comentarios generales: copia o sospecha con el nombre y matrícula del compañero y el motivo, observaciones generales y avisos para la próxima entrega. Se dice "penalización", no "descuento". La revisión (IA, auditada por el docente) solo aporta los comentarios.
 
 ## Consecuencias
 

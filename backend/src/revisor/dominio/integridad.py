@@ -35,7 +35,7 @@ class Tardanza(StrEnum):
 class ReglasIntegridad:
     factor_copia: float = 0.5  # copia confirmada: la calificación se divide a la mitad
     factor_copia_parcial: float = 0.75  # copia parcial: se queda con tres cuartos
-    puntos_formato: float = 1.0  # tipo de archivo incorrecto: descuento simbólico que se nota en NEXUS
+    puntos_formato: float = 1.0  # tipo de archivo incorrecto: penalización simbólica que se nota en NEXUS
     puntos_tardia: float = 1.0  # solo con tardanza confirmada
 
 

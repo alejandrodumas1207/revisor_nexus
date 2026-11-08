@@ -35,6 +35,8 @@ INDICE_NIVEL = {"cumple": 0, "parcial": 1, "no_cumple": 2}
 # Las Evidencias (D4) usan en NEXUS rúbrica de 3 criterios con niveles 100/70/40/0; las D3 no tienen rúbrica
 RUBRICA_EVIDENCIA = calificaciones_validas(3, [100, 70, 40, 0])
 SIN_RUBRICA = calificaciones_validas(None, [])
+# Solo en Etapa 1 se pidió una convención de nombre de archivo
+AVISAR_NOMBRE = {"E1D3", "E1D4"}
 _ORDEN_COPIA = {
     VeredictoCopia.CONFIRMADA: 0,
     VeredictoCopia.PARCIAL: 1,
@@ -86,6 +88,21 @@ def _detalle(actividad: str, a: dict[str, Any], lista: float) -> DetalleCalifica
     )
 
 
+def _companeros(rev: dict[str, Any], matricula: str) -> tuple[str, ...]:
+    """Nombre y matrícula de los compañeros con los que el alumno aparece en un par de copia o sospecha."""
+    nombres = {a["matricula"]: a.get("nombre") or "" for a in rev["alumnos"]}
+    otros: list[str] = []
+    for c in rev.get("copias", []):
+        if VeredictoCopia.desde_texto(c["veredicto"]) is VeredictoCopia.NINGUNA or matricula not in (
+            c["a"],
+            c["b"],
+        ):
+            continue
+        otro = c["b"] if c["a"] == matricula else c["a"]
+        otros.append(f"{nombres.get(otro, '').strip()} ({otro})".strip())
+    return tuple(dict.fromkeys(otros))
+
+
 def _retroalimentacion(rev: dict[str, Any], a: dict[str, Any], detalle: DetalleCalificacion) -> str:
     """Retro desglosada armada por el dominio; si la revisión aún no trae comentarios, la retro anterior."""
     comentarios = a.get("comentarios")
@@ -97,14 +114,16 @@ def _retroalimentacion(rev: dict[str, Any], a: dict[str, Any], detalle: DetalleC
         )
         for c in rev["lista_cotejo"]
     )
+    copia = VeredictoCopia.desde_texto(a.get("copia"))
+    avisos = [a.get("aviso_nombre")] if rev["actividad"] in AVISAR_NOMBRE else []
     informe = InformeAlumno(
         criterios,
         detalle,
-        str(a.get("fortalezas") or ""),
-        str(a.get("pendientes") or ""),
-        VeredictoCopia.desde_texto(a.get("copia")),
+        str(a.get("comentarios_generales") or ""),
+        copia,
+        _companeros(rev, a["matricula"]) if copia is not VeredictoCopia.NINGUNA else (),
         str(a.get("justificacion_copia") or ""),
-        tuple(filter(None, [a.get("aviso_nombre")])),
+        tuple(filter(None, avisos)),
     )
     return componer_retroalimentacion(informe)
 
