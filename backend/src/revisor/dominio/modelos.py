@@ -70,13 +70,17 @@ class Archivo:
 
 @dataclass(frozen=True, slots=True)
 class EntregaNexus:
-    """Lo que NEXUS reporta de un alumno en un elemento."""
+    """Lo que NEXUS reporta de un alumno en un elemento (aunque no haya entregado)."""
 
-    matricula: str
+    alumno: Alumno
     codigo_elemento: str
     archivos: tuple[Archivo, ...]
     calificacion_nexus: float | None  # escala 0-100 de NEXUS
     retros_nexus: tuple[RetroNexus, ...] = field(default=())
+
+    @property
+    def entrego(self) -> bool:
+        return bool(self.archivos)
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,3 +98,31 @@ class CalificacionNexus:
     cuenta_id: int
     valor: int  # escala 0-100 de NEXUS
     rubrica: tuple[NivelRubricaNexus, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class OpcionRubricaNexus:
+    """Un nivel posible de un criterio de la rúbrica de NEXUS."""
+
+    nivel_dominio_id: int
+    criterio_nivel_dominio_id: int
+    posicion: int  # 1 = el más alto
+    porcentaje: float
+
+
+@dataclass(frozen=True, slots=True)
+class CriterioRubricaNexus:
+    criterio_id: int
+    descripcion: str
+    opciones: tuple[OpcionRubricaNexus, ...]  # de mayor a menor
+
+
+@dataclass(frozen=True, slots=True)
+class RubricaNexus:
+    rubrica_id: int
+    criterios: tuple[CriterioRubricaNexus, ...]
+
+    @property
+    def porcentajes(self) -> list[float]:
+        """Porcentaje de cada nivel, de mayor a menor (iguales en todos los criterios)."""
+        return [o.porcentaje for o in self.criterios[0].opciones] if self.criterios else []

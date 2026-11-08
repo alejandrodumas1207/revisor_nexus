@@ -3,21 +3,21 @@
 from collections.abc import Sequence
 from typing import Protocol
 
-from revisor.dominio.modelos import Alumno, CalificacionNexus, Curso, Elemento, EntregaNexus
+from revisor.dominio.modelos import CalificacionNexus, Curso, Elemento, EntregaNexus, RubricaNexus
 
 
 class FuenteNexus(Protocol):
-    def listar_cursos(self, carpeta: str | None = None) -> list[Curso]: ...
+    def listar_cursos(self, carpeta: str | None = None) -> list[Curso]:
+        """Cursos de un periodo (por nombre de carpeta); sin carpeta, el periodo más reciente."""
+        ...
 
     def leer_elementos(self, curso_id: int) -> list[Elemento]: ...
 
-    def niveles_rubrica(self, elemento: Elemento) -> list[float]:
-        """Porcentaje de cada nivel de la rúbrica real del elemento, de mayor a menor."""
+    def leer_rubrica(self, elemento: Elemento) -> RubricaNexus | None: ...
+
+    def leer_entregas(self, curso_id: int, elemento: Elemento) -> list[EntregaNexus]:
+        """Todo el grupo en una sola consulta: archivos, calificación y retroalimentaciones."""
         ...
-
-    def leer_alumnos(self, curso_id: int) -> list[Alumno]: ...
-
-    def leer_entregas(self, curso_id: int, alumno: Alumno) -> list[EntregaNexus]: ...
 
     def descargar(self, url_relativa: str) -> bytes: ...
 
