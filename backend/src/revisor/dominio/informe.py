@@ -12,8 +12,8 @@ from revisor.dominio.integridad import DetalleCalificacion, VeredictoCopia
 NOMBRE_NIVEL = {"cumple": "cumple", "parcial": "cumple parcialmente", "no_cumple": "no cumple"}
 FACTOR_NIVEL = {"cumple": 1.0, "parcial": 0.7, "no_cumple": 0.0}
 _TITULO_COPIA = {
-    VeredictoCopia.CONFIRMADA: "Copia confirmada (calificación × 0.5)",
-    VeredictoCopia.PARCIAL: "Copia parcial (calificación × 0.75)",
+    VeredictoCopia.CONFIRMADA: "Copia confirmada",
+    VeredictoCopia.PARCIAL: "Copia parcial",
     VeredictoCopia.SOSPECHA: "Sospecha de copia (sin penalización)",
 }
 
@@ -84,7 +84,8 @@ def _comentarios_generales(informe: InformeAlumno) -> str:
     lineas: list[str] = []
     if informe.copia in _TITULO_COPIA:
         con = f" con {', '.join(informe.copia_con)}" if informe.copia_con else ""
-        lineas.append(f"• {_TITULO_COPIA[informe.copia]}{con}: {informe.justificacion_copia.strip()}")
+        motivo = informe.justificacion_copia.strip() or "Determinado en la revisión del docente."
+        lineas.append(f"• {_TITULO_COPIA[informe.copia]}{con}: {motivo}")
     if informe.comentarios_generales.strip():
         lineas.append(f"• {informe.comentarios_generales.strip()}")
     lineas += [f"• Para la próxima entrega: {a.strip()}" for a in informe.avisos]

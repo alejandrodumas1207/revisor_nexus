@@ -9,15 +9,24 @@ import json
 from pathlib import Path
 from typing import Any
 
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.worksheet.worksheet import Worksheet
 
 from revisor.dominio.calificacion import calificaciones_validas
 from revisor.dominio.informe import CriterioEvaluado, InformeAlumno, componer_retroalimentacion
 from revisor.dominio.instrumentos import CriterioPropio, NivelPropio, RubricaPropia
-from revisor.dominio.integridad import DetalleCalificacion, Tardanza, VeredictoCopia, detalle_calificacion
+from revisor.dominio.integridad import (
+    DecisionDocente,
+    DetalleCalificacion,
+    Integridad,
+    Tardanza,
+    VeredictoCopia,
+    detalle_calificacion,
+    integridad_vigente,
+)
 
 CARPETA = Path(__file__).resolve().parent.parent / "datos_locales" / "rnap"
 DESTINO = CARPETA / "RNAP_E1_E2_revision_v2.xlsx"
@@ -35,8 +44,14 @@ INDICE_NIVEL = {"cumple": 0, "parcial": 1, "no_cumple": 2}
 # Las Evidencias (D4) usan en NEXUS rúbrica de 3 criterios con niveles 100/70/40/0; las D3 no tienen rúbrica
 RUBRICA_EVIDENCIA = calificaciones_validas(3, [100, 70, 40, 0])
 SIN_RUBRICA = calificaciones_validas(None, [])
-# Solo en Etapa 1 se pidió una convención de nombre de archivo
-AVISAR_NOMBRE = {"E1D3", "E1D4"}
+COL_FORMATO, COL_TARDANZA, COL_COPIA = "Formato (aplicar)", "Tardanza (aplicar)", "Copia (aplicar)"
+OPCIONES = {
+    COL_FORMATO: ["sí", "no"],
+    COL_TARDANZA: [t.value for t in Tardanza],
+    COL_COPIA: [v.value for v in VeredictoCopia],
+}
+OCULTAS = ["_rec_formato", "_rec_tardanza", "_rec_copia"]  # recomendación original, para detectar cambios
+type Decisiones = dict[tuple[str, str], DecisionDocente]
 _ORDEN_COPIA = {
     VeredictoCopia.CONFIRMADA: 0,
     VeredictoCopia.PARCIAL: 1,
@@ -77,14 +92,22 @@ def _calificacion_lista(rubrica: RubricaPropia, a: dict[str, Any]) -> float:
     return rubrica.calificar({c.id: INDICE_NIVEL[niveles.get(c.id, "no_cumple")] for c in rubrica.criterios})
 
 
-def _detalle(actividad: str, a: dict[str, Any], lista: float) -> DetalleCalificacion:
+def _recomendada(a: dict[str, Any]) -> Integridad:
+    return Integridad(
+        bool(a.get("formato_incorrecto")),
+        Tardanza(a.get("tardanza") or "a tiempo"),
+        VeredictoCopia.desde_texto(a.get("copia")),
+    )
+
+
+def _detalle(actividad: str, integridad: Integridad, lista: float) -> DetalleCalificacion:
     validas = RUBRICA_EVIDENCIA if actividad.endswith("D4") else SIN_RUBRICA
     return detalle_calificacion(
         lista,
         validas,
-        formato_incorrecto=bool(a.get("formato_incorrecto")),
-        tardanza=Tardanza(a.get("tardanza") or "a tiempo"),
-        copia=VeredictoCopia.desde_texto(a.get("copia")),
+        formato_incorrecto=integridad.formato_incorrecto,
+        tardanza=integridad.tardanza,
+        copia=integridad.copia,
     )
 
 
@@ -103,7 +126,9 @@ def _companeros(rev: dict[str, Any], matricula: str) -> tuple[str, ...]:
     return tuple(dict.fromkeys(otros))
 
 
-def _retroalimentacion(rev: dict[str, Any], a: dict[str, Any], detalle: DetalleCalificacion) -> str:
+def _retroalimentacion(
+    rev: dict[str, Any], a: dict[str, Any], detalle: DetalleCalificacion, copia: VeredictoCopia
+) -> str:
     """Retro desglosada armada por el dominio; si la revisión aún no trae comentarios, la retro anterior."""
     comentarios = a.get("comentarios")
     if not comentarios or not a.get("niveles"):
@@ -114,71 +139,124 @@ def _retroalimentacion(rev: dict[str, Any], a: dict[str, Any], detalle: DetalleC
         )
         for c in rev["lista_cotejo"]
     )
-    copia = VeredictoCopia.desde_texto(a.get("copia"))
-    avisos = [a.get("aviso_nombre")] if rev["actividad"] in AVISAR_NOMBRE else []
+    justificacion = str(a.get("justificacion_copia") or "") if copia is not VeredictoCopia.NINGUNA else ""
     informe = InformeAlumno(
         criterios,
         detalle,
         str(a.get("comentarios_generales") or ""),
         copia,
         _companeros(rev, a["matricula"]) if copia is not VeredictoCopia.NINGUNA else (),
-        str(a.get("justificacion_copia") or ""),
-        tuple(filter(None, avisos)),
+        justificacion,
+        tuple(filter(None, [a.get("aviso_nombre")])),
     )
     return componer_retroalimentacion(informe)
 
 
 def _fila(
-    rev: dict[str, Any], a: dict[str, Any], rubrica: RubricaPropia
+    rev: dict[str, Any], a: dict[str, Any], rubrica: RubricaPropia, decisiones: Decisiones
 ) -> tuple[list[Any], float | None, bool]:
     ids = [c["id"] for c in rev["lista_cotejo"]]
     lista = _calificacion_lista(rubrica, a)
-    detalle = _detalle(rev["actividad"], a, lista)
+    recomendada = _recomendada(a)
+    decision = decisiones.get((rev["actividad"], str(a.get("matricula"))), DecisionDocente())
+    vigente = integridad_vigente(recomendada, decision)
+    detalle = _detalle(rev["actividad"], vigente, lista)
     excel = a.get("calificacion_excel")
     dif = detalle.final - excel if isinstance(excel, int | float) else None
     entrego = bool(a.get("archivo"))
-    copia = VeredictoCopia.desde_texto(a.get("copia"))
-    revisar = copia is not VeredictoCopia.NINGUNA or (entrego and a.get("tardanza") == "dudosa")
+    revisar = recomendada.copia is not VeredictoCopia.NINGUNA or (
+        entrego and recomendada.tardanza is Tardanza.DUDOSA
+    )
     fila = [
         a.get("matricula"),
         a.get("nombre"),
         round(lista, 2),
-        "−1" if a.get("formato_incorrecto") else "",
-        a.get("tardanza") if entrego else "sin archivo",
-        copia.value,
+        "sí" if vigente.formato_incorrecto else "no",
+        vigente.tardanza.value if entrego else "a tiempo",
+        vigente.copia.value,
         detalle.final,
         excel,
         dif,
         *[NIVEL.get(a.get("niveles", {}).get(i, ""), "") for i in ids],
-        _retroalimentacion(rev, a, detalle),
+        _retroalimentacion(rev, a, detalle, vigente.copia),
+        _texto_recomendacion(recomendada, entrego),
         "\n".join([*(a.get("alertas") or []), *filter(None, [a.get("tardanza_evidencia")])]),
+        "sí" if recomendada.formato_incorrecto else "no",
+        recomendada.tardanza.value if entrego else "a tiempo",
+        recomendada.copia.value,
     ]
     return fila, dif, revisar
 
 
-def _hoja_actividad(wb: Workbook, rev: dict[str, Any]) -> dict[str, int]:
+def _texto_recomendacion(r: Integridad, entrego: bool) -> str:
+    if not entrego:
+        return "Sin archivo."
+    formato = "penalizar formato" if r.formato_incorrecto else "formato correcto"
+    return f"{formato}; tardanza: {r.tardanza.value}; copia: {r.copia.value}"
+
+
+def _leer_decisiones(ruta: Path) -> Decisiones:
+    """Lo que el docente cambió en las columnas "(aplicar)" respecto a la recomendación original."""
+    if not ruta.exists():
+        return {}
+    decisiones: Decisiones = {}
+    for ws in load_workbook(ruta, read_only=True).worksheets:
+        filas = list(ws.values)
+        enc = list(filas[0]) if filas else []
+        if not set([COL_FORMATO, COL_TARDANZA, COL_COPIA, *OCULTAS]) <= set(enc):
+            continue
+        for f in filas[1:]:
+            if f[enc.index("Matrícula")] is not None:
+                decisiones[(ws.title, str(f[enc.index("Matrícula")]))] = _decision_de_fila(f, enc)
+    return decisiones
+
+
+def _decision_de_fila(f: tuple[Any, ...], enc: list[Any]) -> DecisionDocente:
+    def cambiado(col: str, oculta: str) -> Any:
+        valor = f[enc.index(col)]
+        return valor if valor != f[enc.index(oculta)] else None
+
+    formato = cambiado(COL_FORMATO, "_rec_formato")
+    tardanza = cambiado(COL_TARDANZA, "_rec_tardanza")
+    copia = cambiado(COL_COPIA, "_rec_copia")
+    return DecisionDocente(
+        formato_incorrecto=None if formato is None else formato == "sí",
+        tardanza=None if tardanza is None else Tardanza(tardanza),
+        copia=None if copia is None else VeredictoCopia.desde_texto(copia),
+    )
+
+
+def _listas_desplegables(ws: Worksheet, columnas: list[str]) -> None:
+    for nombre, opciones in OPCIONES.items():
+        letra = get_column_letter(columnas.index(nombre) + 1)
+        validacion = DataValidation(type="list", formula1=f'"{",".join(opciones)}"', allow_blank=False)
+        validacion.add(f"{letra}2:{letra}{ws.max_row}")
+        ws.add_data_validation(validacion)
+
+
+def _hoja_actividad(wb: Workbook, rev: dict[str, Any], decisiones: Decisiones) -> dict[str, int]:
     ws = wb.create_sheet(rev["actividad"])
     ids = [c["id"] for c in rev["lista_cotejo"]]
     columnas = [
         "Matrícula",
         "Alumno",
         "Lista (0-10)",
-        "Formato",
-        "Tardanza",
-        "Copia",
+        COL_FORMATO,
+        COL_TARDANZA,
+        COL_COPIA,
         "Final",
         "NEXUS",
         "Dif.",
     ]
     _encabezado(
         ws,
-        [*columnas, *ids, "Retroalimentación propuesta", "Alertas"],
-        [11, 28, 9, 8, 14, 14, 7, 7, 6] + [5] * len(ids) + [80, 50],
+        [*columnas, *ids, "Retroalimentación propuesta", "Recomendación de la revisión", "Alertas", *OCULTAS],
+        [11, 28, 9, 10, 16, 16, 7, 7, 6] + [5] * len(ids) + [90, 30, 50, 4, 4, 4],
     )
     conteo = {"comparables": 0, "coinciden": 0}
     rubrica = _rubrica(rev)
     for a in rev["alumnos"]:
-        fila, dif, revisar = _fila(rev, a, rubrica)
+        fila, dif, revisar = _fila(rev, a, rubrica, decisiones)
         ws.append(fila)
         relleno = REVISAR if revisar else DIFERENCIA if dif is not None and abs(dif) >= 2 else None
         if relleno:
@@ -188,6 +266,9 @@ def _hoja_actividad(wb: Workbook, rev: dict[str, Any]) -> dict[str, int]:
             conteo["comparables"] += 1
             conteo["coinciden"] += abs(dif) <= 1
     _ajustar(ws)
+    _listas_desplegables(ws, [*columnas, *ids])
+    for i in range(len(OCULTAS)):
+        ws.column_dimensions[get_column_letter(ws.max_column - i)].hidden = True
     return conteo
 
 
@@ -243,7 +324,7 @@ def _contar_copias(rev: dict[str, Any], *veredictos: VeredictoCopia) -> int:
     return sum(1 for c in rev.get("copias", []) if VeredictoCopia.desde_texto(c["veredicto"]) in veredictos)
 
 
-def _resumen(wb: Workbook, revisiones: list[dict[str, Any]]) -> None:
+def _resumen(wb: Workbook, revisiones: list[dict[str, Any]], decisiones: Decisiones) -> None:
     ws = wb.create_sheet("Resumen", 0)
     _encabezado(
         ws,
@@ -260,7 +341,7 @@ def _resumen(wb: Workbook, revisiones: list[dict[str, Any]]) -> None:
         [10, 9, 14, 12, 12, 12, 12, 100],
     )
     for rev in revisiones:
-        conteo = _hoja_actividad(wb, rev)
+        conteo = _hoja_actividad(wb, rev, decisiones)
         alumnos = rev["alumnos"]
         ws.append(
             [
@@ -281,13 +362,18 @@ def main() -> None:
     revisiones = [
         json.loads(p.read_text(encoding="utf-8")) for p in sorted(CARPETA.glob("*_revision_v2.json"))
     ]
+    decisiones = _leer_decisiones(DESTINO)
     wb = Workbook()
     wb.remove(wb.worksheets[0])
-    _resumen(wb, revisiones)
+    _resumen(wb, revisiones, decisiones)
     _hoja_listas(wb, revisiones)
     _hoja_copias(wb, revisiones)
-    wb.save(DESTINO)
-    print(f"{len(revisiones)} actividades -> {DESTINO}")
+    try:
+        wb.save(DESTINO)
+    except PermissionError:
+        raise SystemExit(f"Cierra {DESTINO.name} en Excel y vuelve a ejecutar.") from None
+    cambios = sum(1 for d in decisiones.values() if d != DecisionDocente())
+    print(f"{len(revisiones)} actividades, {cambios} decisiones del docente aplicadas -> {DESTINO}")
 
 
 if __name__ == "__main__":

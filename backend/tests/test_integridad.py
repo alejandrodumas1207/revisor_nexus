@@ -1,5 +1,13 @@
 from revisor.dominio.calificacion import calificaciones_validas
-from revisor.dominio.integridad import ReglasIntegridad, Tardanza, VeredictoCopia, calificacion_final
+from revisor.dominio.integridad import (
+    DecisionDocente,
+    Integridad,
+    ReglasIntegridad,
+    Tardanza,
+    VeredictoCopia,
+    calificacion_final,
+    integridad_vigente,
+)
 
 SIN_RUBRICA = calificaciones_validas(None, [])
 RUBRICA_3 = calificaciones_validas(3, [100, 70, 40, 0])
@@ -13,8 +21,8 @@ def test_copia_confirmada_divide_a_la_mitad():
     assert calificacion_final(9.0, SIN_RUBRICA, copia=VeredictoCopia.CONFIRMADA) == 5  # 4.5 sube a 5
 
 
-def test_copia_parcial_tres_cuartos():
-    assert calificacion_final(8.0, SIN_RUBRICA, copia=VeredictoCopia.PARCIAL) == 6
+def test_copia_parcial_085():
+    assert calificacion_final(8.0, SIN_RUBRICA, copia=VeredictoCopia.PARCIAL) == 7  # 6.8 sube a 7
 
 
 def test_sospecha_no_sanciona():
@@ -56,3 +64,23 @@ def test_penalizaciones_configurables_y_acumuladas():
         10.0, SIN_RUBRICA, formato_incorrecto=True, tardanza=Tardanza.CONFIRMADA, reglas=reglas
     )
     assert final == 7
+
+
+def test_sin_decision_se_aplica_la_recomendacion():
+    recomendada = Integridad(copia=VeredictoCopia.PARCIAL)
+    assert integridad_vigente(recomendada, DecisionDocente()) == recomendada
+
+
+def test_docente_desmarca_copia_y_marca_tardanza():
+    recomendada = Integridad(copia=VeredictoCopia.PARCIAL, tardanza=Tardanza.DUDOSA)
+    decision = DecisionDocente(copia=VeredictoCopia.NINGUNA, tardanza=Tardanza.CONFIRMADA)
+    vigente = integridad_vigente(recomendada, decision)
+    assert (vigente.copia, vigente.tardanza) == (VeredictoCopia.NINGUNA, Tardanza.CONFIRMADA)
+    assert calificacion_final(8.0, SIN_RUBRICA, tardanza=vigente.tardanza, copia=vigente.copia) == 7
+
+
+def test_docente_quita_penalizacion_de_formato():
+    vigente = integridad_vigente(
+        Integridad(formato_incorrecto=True), DecisionDocente(formato_incorrecto=False)
+    )
+    assert not vigente.formato_incorrecto

@@ -47,9 +47,9 @@ def test_copia_parcial_nombra_al_companero_y_explica():
             "Tu E1D3-08 repite su secuencia de ideas y la frase 'se pierde información valiosa'.",
         )
     )
-    assert "• Copia parcial: × 0.75 → 4.7" in texto  # 6.2 × 0.75 = 4.65
-    assert texto.startswith("Calificación en NEXUS: 5")
-    assert "• Copia parcial (calificación × 0.75) con Treviño Ruiz Luis (2251411): Tu E1D3-08" in texto
+    assert "• Copia parcial: × 0.85 → 5.3" in texto  # 6.2 × 0.85 = 5.27
+    assert texto.startswith("Calificación en NEXUS: 6")
+    assert "• Copia parcial con Treviño Ruiz Luis (2251411): Tu E1D3-08" in texto
 
 
 def test_sospecha_sin_penalizacion():
@@ -71,3 +71,8 @@ def test_comentarios_generales_y_avisos_opcionales():
         "Comentarios generales:\n• Buen avance respecto a la etapa 1.\n"
         "• Para la próxima entrega: Incluye tu matrícula en el nombre."
     )
+
+
+def test_copia_marcada_por_el_docente_sin_justificacion_previa():
+    texto = componer_retroalimentacion(_informe(VeredictoCopia.PARCIAL))
+    assert "• Copia parcial: Determinado en la revisión del docente." in texto

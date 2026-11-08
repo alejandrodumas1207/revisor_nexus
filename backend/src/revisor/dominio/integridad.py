@@ -13,7 +13,7 @@ from revisor.dominio.calificacion import POLITICA_POR_DEFECTO, PoliticaAjuste, a
 
 class VeredictoCopia(StrEnum):
     CONFIRMADA = "copia confirmada"  # copió todo o casi todo: × 0.5
-    PARCIAL = "copia parcial"  # casi seguro que copió una parte, aunque parafraseada: × 0.75
+    PARCIAL = "copia parcial"  # casi seguro que copió una parte, aunque parafraseada: × 0.85
     SOSPECHA = "sospecha"  # similitudes que pueden ser coincidencia: sin sanción, decide el docente
     NINGUNA = "ninguna"
 
@@ -34,7 +34,7 @@ class Tardanza(StrEnum):
 @dataclass(frozen=True, slots=True)
 class ReglasIntegridad:
     factor_copia: float = 0.5  # copia confirmada: la calificación se divide a la mitad
-    factor_copia_parcial: float = 0.75  # copia parcial: se queda con tres cuartos
+    factor_copia_parcial: float = 0.85  # copia parcial: penalización menor que avisa que se detectó
     puntos_formato: float = 1.0  # tipo de archivo incorrecto: penalización simbólica que se nota en NEXUS
     puntos_tardia: float = 1.0  # solo con tardanza confirmada
 
@@ -110,3 +110,32 @@ def _factor_copia(copia: VeredictoCopia, reglas: ReglasIntegridad) -> float:
     if copia is VeredictoCopia.PARCIAL:
         return reglas.factor_copia_parcial
     return 1.0
+
+
+@dataclass(frozen=True, slots=True)
+class Integridad:
+    """Penalizaciones fuera de la lista de cotejo: formato, tardanza y copia."""
+
+    formato_incorrecto: bool = False
+    tardanza: Tardanza = Tardanza.A_TIEMPO
+    copia: VeredictoCopia = VeredictoCopia.NINGUNA
+
+
+@dataclass(frozen=True, slots=True)
+class DecisionDocente:
+    """Lo que el docente marca o desmarca. None = acepta la recomendación de la revisión."""
+
+    formato_incorrecto: bool | None = None
+    tardanza: Tardanza | None = None
+    copia: VeredictoCopia | None = None
+
+
+def integridad_vigente(recomendada: Integridad, decision: DecisionDocente) -> Integridad:
+    """La decisión del docente sustituye a la recomendación en cada penalización que haya marcado."""
+    return Integridad(
+        recomendada.formato_incorrecto
+        if decision.formato_incorrecto is None
+        else decision.formato_incorrecto,
+        recomendada.tardanza if decision.tardanza is None else decision.tardanza,
+        recomendada.copia if decision.copia is None else decision.copia,
+    )

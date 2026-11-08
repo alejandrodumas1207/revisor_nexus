@@ -38,6 +38,8 @@ Listas de 4 a 5 criterios. Cumple = 100 %, parcial = 70 %, no cumple = 0 %.
 
 La arma el código (`dominio/informe.py`): calificación en NEXUS; un apartado por criterio con puntos obtenidos, nivel y comentario (lo que está bien y lo que falta en ese criterio); total de la lista; ajustes paso a paso (formato, tardanza, copia, ajuste a NEXUS); y, si hacen falta, comentarios generales: copia o sospecha con el nombre y matrícula del compañero y el motivo, observaciones generales y avisos para la próxima entrega. Se dice "penalización", no "descuento". La revisión (IA, auditada por el docente) solo aporta los comentarios.
 
+**Observaciones sin penalización (2026-11-08).** Respuestas burlonas ("no sé" en tono de juego), contenido que no corresponde a lo solicitado o cualquier cosa fuera de lugar se señalan en los comentarios generales para que el alumno sepa que se vio. No cambian el nivel del criterio más allá de lo que la respuesta logre por sí misma.
+
 ## Consecuencias
 
 - El docente puede cambiar el instrumento a mitad de la revisión sin depender de cómo se configuró la rúbrica en NEXUS.
