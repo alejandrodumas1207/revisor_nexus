@@ -27,6 +27,11 @@ Listas de 4 a 5 criterios. Cumple = 100 %, parcial = 70 %, no cumple = 0 %.
 - **Parcial:** razonamiento correcto con alguna cifra que no coincide con su cuaderno, o cita una cifra pero falta otra que se pedía.
 - **Cumple:** razonamiento correcto con cifras que salen de sus propios resultados.
 
+**Criterios que agrupan varias preguntas (2026-11-08).** Se valora lo que sí se hizo:
+- Todas las preguntas bien: cumple.
+- Al menos una bien o aceptable, aunque otra falle: parcial.
+- No cumple solo cuando todas fallan (vacías, genéricas, huecos sin llenar o con error conceptual).
+
 ## Consecuencias
 
 - El docente puede cambiar el instrumento a mitad de la revisión sin depender de cómo se configuró la rúbrica en NEXUS.
