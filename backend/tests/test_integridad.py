@@ -13,8 +13,19 @@ def test_copia_confirmada_divide_a_la_mitad():
     assert calificacion_final(9.0, SIN_RUBRICA, copia=VeredictoCopia.CONFIRMADA) == 5  # 4.5 sube a 5
 
 
-def test_copia_probable_no_sanciona():
-    assert calificacion_final(9.0, SIN_RUBRICA, copia=VeredictoCopia.PROBABLE) == 9
+def test_copia_parcial_tres_cuartos():
+    assert calificacion_final(8.0, SIN_RUBRICA, copia=VeredictoCopia.PARCIAL) == 6
+
+
+def test_sospecha_no_sanciona():
+    assert calificacion_final(9.0, SIN_RUBRICA, copia=VeredictoCopia.SOSPECHA) == 9
+
+
+def test_veredictos_anteriores_se_traducen():
+    assert VeredictoCopia.desde_texto("probable") is VeredictoCopia.SOSPECHA
+    assert VeredictoCopia.desde_texto("coincidencia por plantilla") is VeredictoCopia.NINGUNA
+    assert VeredictoCopia.desde_texto("copia parcial") is VeredictoCopia.PARCIAL
+    assert VeredictoCopia.desde_texto(None) is VeredictoCopia.NINGUNA
 
 
 def test_copia_con_rubrica_nexus_sube_a_valida():

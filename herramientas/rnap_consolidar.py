@@ -1,7 +1,8 @@
 """Junta las revisiones v2 de RNAP E1-E2 en un Excel para que el docente las valide.
 
 La calificación final la calcula el dominio (instrumento → formato → tardanza → copia → válida en NEXUS),
-igual que la calcularía la app al subirla. Lee datos_locales/rnap/*_revision_v2.json.
+igual que la calcularía la app al subirla. La retroalimentación desglosada también la arma el dominio.
+Lee datos_locales/rnap/*_revision_v2.json.
 """
 
 import json
@@ -14,8 +15,9 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 
 from revisor.dominio.calificacion import calificaciones_validas
+from revisor.dominio.informe import CriterioEvaluado, InformeAlumno, componer_retroalimentacion
 from revisor.dominio.instrumentos import CriterioPropio, NivelPropio, RubricaPropia
-from revisor.dominio.integridad import Tardanza, VeredictoCopia, calificacion_final
+from revisor.dominio.integridad import DetalleCalificacion, Tardanza, VeredictoCopia, detalle_calificacion
 
 CARPETA = Path(__file__).resolve().parent.parent / "datos_locales" / "rnap"
 DESTINO = CARPETA / "RNAP_E1_E2_revision_v2.xlsx"
@@ -33,6 +35,12 @@ INDICE_NIVEL = {"cumple": 0, "parcial": 1, "no_cumple": 2}
 # Las Evidencias (D4) usan en NEXUS rúbrica de 3 criterios con niveles 100/70/40/0; las D3 no tienen rúbrica
 RUBRICA_EVIDENCIA = calificaciones_validas(3, [100, 70, 40, 0])
 SIN_RUBRICA = calificaciones_validas(None, [])
+_ORDEN_COPIA = {
+    VeredictoCopia.CONFIRMADA: 0,
+    VeredictoCopia.PARCIAL: 1,
+    VeredictoCopia.SOSPECHA: 2,
+    VeredictoCopia.NINGUNA: 3,
+}
 
 
 def _encabezado(ws: Worksheet, columnas: list[str], anchos: list[int]) -> None:
@@ -67,39 +75,63 @@ def _calificacion_lista(rubrica: RubricaPropia, a: dict[str, Any]) -> float:
     return rubrica.calificar({c.id: INDICE_NIVEL[niveles.get(c.id, "no_cumple")] for c in rubrica.criterios})
 
 
-def _final(actividad: str, a: dict[str, Any], lista: float) -> int:
+def _detalle(actividad: str, a: dict[str, Any], lista: float) -> DetalleCalificacion:
     validas = RUBRICA_EVIDENCIA if actividad.endswith("D4") else SIN_RUBRICA
-    copia = a.get("copia") or "ninguna"
-    return calificacion_final(
+    return detalle_calificacion(
         lista,
         validas,
         formato_incorrecto=bool(a.get("formato_incorrecto")),
         tardanza=Tardanza(a.get("tardanza") or "a tiempo"),
-        copia=VeredictoCopia(copia),
+        copia=VeredictoCopia.desde_texto(a.get("copia")),
     )
 
 
+def _retroalimentacion(rev: dict[str, Any], a: dict[str, Any], detalle: DetalleCalificacion) -> str:
+    """Retro desglosada armada por el dominio; si la revisión aún no trae comentarios, la retro anterior."""
+    comentarios = a.get("comentarios")
+    if not comentarios or not a.get("niveles"):
+        return str(a.get("retroalimentacion") or "")
+    criterios = tuple(
+        CriterioEvaluado(
+            c["id"], c["criterio"], float(c["puntos"]), a["niveles"][c["id"]], comentarios.get(c["id"], "")
+        )
+        for c in rev["lista_cotejo"]
+    )
+    informe = InformeAlumno(
+        criterios,
+        detalle,
+        str(a.get("fortalezas") or ""),
+        str(a.get("pendientes") or ""),
+        VeredictoCopia.desde_texto(a.get("copia")),
+        str(a.get("justificacion_copia") or ""),
+        tuple(filter(None, [a.get("aviso_nombre")])),
+    )
+    return componer_retroalimentacion(informe)
+
+
 def _fila(
-    actividad: str, a: dict[str, Any], ids: list[str], rubrica: RubricaPropia
+    rev: dict[str, Any], a: dict[str, Any], rubrica: RubricaPropia
 ) -> tuple[list[Any], float | None, bool]:
+    ids = [c["id"] for c in rev["lista_cotejo"]]
     lista = _calificacion_lista(rubrica, a)
-    final = _final(actividad, a, lista)
+    detalle = _detalle(rev["actividad"], a, lista)
     excel = a.get("calificacion_excel")
-    dif = final - excel if isinstance(excel, int | float) else None
+    dif = detalle.final - excel if isinstance(excel, int | float) else None
     entrego = bool(a.get("archivo"))
-    revisar = a.get("copia") == "probable" or (entrego and a.get("tardanza") == "dudosa")
+    copia = VeredictoCopia.desde_texto(a.get("copia"))
+    revisar = copia is not VeredictoCopia.NINGUNA or (entrego and a.get("tardanza") == "dudosa")
     fila = [
         a.get("matricula"),
         a.get("nombre"),
         round(lista, 2),
         "−1" if a.get("formato_incorrecto") else "",
         a.get("tardanza") if entrego else "sin archivo",
-        a.get("copia"),
-        final,
+        copia.value,
+        detalle.final,
         excel,
         dif,
         *[NIVEL.get(a.get("niveles", {}).get(i, ""), "") for i in ids],
-        a.get("retroalimentacion"),
+        _retroalimentacion(rev, a, detalle),
         "\n".join([*(a.get("alertas") or []), *filter(None, [a.get("tardanza_evidencia")])]),
     ]
     return fila, dif, revisar
@@ -127,7 +159,7 @@ def _hoja_actividad(wb: Workbook, rev: dict[str, Any]) -> dict[str, int]:
     conteo = {"comparables": 0, "coinciden": 0}
     rubrica = _rubrica(rev)
     for a in rev["alumnos"]:
-        fila, dif, revisar = _fila(rev["actividad"], a, ids, rubrica)
+        fila, dif, revisar = _fila(rev, a, rubrica)
         ws.append(fila)
         relleno = REVISAR if revisar else DIFERENCIA if dif is not None and abs(dif) >= 2 else None
         if relleno:
@@ -171,10 +203,16 @@ def _hoja_copias(wb: Workbook, revisiones: list[dict[str, Any]]) -> None:
         [10, 11, 11, 18, 100, 20],
     )
     for rev in revisiones:
-        for c in sorted(rev.get("copias", []), key=lambda c: c["veredicto"] != "copia confirmada"):
+        for c in sorted(
+            rev.get("copias", []), key=lambda c: _ORDEN_COPIA[VeredictoCopia.desde_texto(c["veredicto"])]
+        ):
             detalle = "\n".join(f"• {x['ubicacion']}: {x['detalle']}" for x in c.get("coincidencias", []))
             ws.append([rev["actividad"], c["a"], c["b"], c["veredicto"], detalle, ""])
     _ajustar(ws)
+
+
+def _contar_copias(rev: dict[str, Any], *veredictos: VeredictoCopia) -> int:
+    return sum(1 for c in rev.get("copias", []) if VeredictoCopia.desde_texto(c["veredicto"]) in veredictos)
 
 
 def _resumen(wb: Workbook, revisiones: list[dict[str, Any]]) -> None:
@@ -185,8 +223,8 @@ def _resumen(wb: Workbook, revisiones: list[dict[str, Any]]) -> None:
             "Actividad",
             "Alumnos",
             "Coinciden ±1 con NEXUS",
-            "Copias confirmadas",
-            "Copias probables",
+            "Copias (confirmada o parcial)",
+            "Sospechas",
             "Tardías confirmadas",
             "Tardías dudosas",
             "Notas",
@@ -201,8 +239,8 @@ def _resumen(wb: Workbook, revisiones: list[dict[str, Any]]) -> None:
                 rev["actividad"],
                 len(alumnos),
                 f"{conteo['coinciden']} de {conteo['comparables']}",
-                sum(1 for c in rev.get("copias", []) if c["veredicto"] == "copia confirmada"),
-                sum(1 for c in rev.get("copias", []) if c["veredicto"] == "probable"),
+                _contar_copias(rev, VeredictoCopia.CONFIRMADA, VeredictoCopia.PARCIAL),
+                _contar_copias(rev, VeredictoCopia.SOSPECHA),
                 sum(1 for a in alumnos if a.get("tardanza") == "tardía confirmada"),
                 sum(1 for a in alumnos if a.get("tardanza") == "dudosa" and a.get("archivo")),
                 rev.get("notas_para_profesor"),

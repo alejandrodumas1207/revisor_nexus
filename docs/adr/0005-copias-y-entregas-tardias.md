@@ -9,7 +9,7 @@ En RNAP E1-E2 hubo copias confirmadas y varios alumnos con 0 por "no se registr�
 ## Decisión
 
 - **Copia.** Fuera del instrumento: primero se evalúa con la lista de cotejo como a cualquiera y después la calificación se multiplica por 0.5. No es un criterio del instrumento, porque mezclaría calidad con integridad.
-  - Solo la copia confirmada por el docente se sanciona. "Probable" se señala para hablar con el alumno; "coincidencia por plantilla" no tiene efecto.
+  - Se sancionan la copia confirmada (× 0.5) y la copia parcial (× 0.75), siempre validadas por el docente; la sospecha solo se señala (ver veredictos abajo).
   - Aplica a todos los involucrados, salvo que el docente identifique a quien fue copiado y lo exente.
 - **Qué cuenta como copia (2026-11-06).** Una plantilla compartida hace que el código se parezca, y eso no es copia. Son indicadores de copia:
   - redacción igual o casi igual en las respuestas escritas;
@@ -17,10 +17,14 @@ En RNAP E1-E2 hubo copias confirmadas y varios alumnos con 0 por "no se registr�
   - errores idiosincrásicos compartidos: las mismas faltas de ortografía, espacios dobles, signos mal puestos, nombres de variables raros o residuos de código idénticos;
   - datos de otro alumno dentro del archivo (matrícula, nombre o salidas que no corresponden).
 
-  Veredictos:
-  - **Copia confirmada:** coincidencia exacta o con varios indicadores claros. Se sanciona.
-  - **Probable:** va a revisión manual, con la ubicación de cada coincidencia (pregunta, celda, frase), y el docente decide si pasa como copia.
-  - **Coincidencia por plantilla:** no es copia y no se muestra como alerta.
+  Veredictos (2026-11-08), según gravedad y certeza:
+  - **Copia confirmada:** copió todo o casi todo (palabra por palabra, o los mismos datos y errores en muchas partes). × 0.5.
+  - **Copia parcial:** casi seguro que copió una parte, aunque sea poca o parafraseada (una o dos respuestas). × 0.75.
+  - **Sospecha:** similitudes que pueden explicarse por coincidencia, por haber hablado entre ellos o por la plantilla (por ejemplo, el mismo valor erróneo y una recomendación común). Sin descuento; se menciona al alumno y el docente decide.
+  - **Coincidencia por plantilla:** no es copia y no se muestra.
+
+  El factor se aplica después de evaluar con la lista. La retroalimentación explica el veredicto con evidencia concreta, sin nombrar al otro alumno.
+
 - **Entrega tardía.** Se acepta y resta 1 punto de 10, **solo cuando la tardanza es segura** (`Tardanza.CONFIRMADA`). Si hay duda (por ejemplo, la fecha límite se movió y no se sabe cuál regía), la entrega queda como `DUDOSA`: no se penaliza y se le muestra al docente para que decida.
   - Para saber si una entrega es tardía se usa primero la marca `Extemporanea` de NEXUS.
   - Cuando la entrega llega por formulario, se compara la fecha del archivo con la fecha límite del elemento. Si la fecha límite se movió, se usa como referencia la fecha que concentra a la mayoría de las entregas.

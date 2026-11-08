@@ -34,6 +34,10 @@ Listas de 4 a 5 criterios. Cumple = 100 %, parcial = 70 %, no cumple = 0 %.
 - Al menos una bien o aceptable, aunque otra falle: parcial.
 - No cumple solo cuando todas fallan (vacías, genéricas, huecos sin llenar o con error conceptual).
 
+### Retroalimentación al alumno (2026-11-08)
+
+La arma el código (`dominio/informe.py`) con siempre los mismos apartados: calificación en NEXUS; desglose por criterio con puntos obtenidos, nivel y comentario; total de la lista; ajustes paso a paso (formato, tardanza, copia, ajuste a NEXUS); lo que hizo bien; lo que falta; copia o sospecha con su justificación; avisos para la próxima entrega. La revisión (IA, auditada por el docente) solo aporta los comentarios.
+
 ## Consecuencias
 
 - El docente puede cambiar el instrumento a mitad de la revisión sin depender de cómo se configuró la rúbrica en NEXUS.
