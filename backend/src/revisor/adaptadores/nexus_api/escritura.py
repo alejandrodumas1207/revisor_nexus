@@ -6,13 +6,10 @@ Formatos capturados el 2026-11-06; ver docs/nexus_api.md.
 from collections.abc import Mapping, Sequence
 from typing import Any, Protocol
 
+from revisor.adaptadores.nexus_api.cliente import ErrorNexus
 from revisor.dominio.modelos import CalificacionNexus, Elemento, TipoElemento
 
 _TIPO_ELEMENTO = {TipoElemento.EVIDENCIA: 1, TipoElemento.PIA: 2}
-
-
-class ErrorNexus(RuntimeError):
-    """NEXUS respondió con un error en el cuerpo (siempre contesta HTTP 200)."""
 
 
 class ClienteNexus(Protocol):

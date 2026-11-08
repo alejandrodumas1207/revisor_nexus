@@ -45,7 +45,7 @@ ignore = ["RUF001", "RUF002", "RUF003"]  # acentos y signos del español
 known-first-party = ["revisor"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101"]
+"tests/**" = ["S101", "S105", "S106"]  # assert y tokens de ejemplo
 
 [tool.pyright]
 include = ["src", "tests"]
