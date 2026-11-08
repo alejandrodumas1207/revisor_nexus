@@ -19,6 +19,8 @@ Las rúbricas de NEXUS no siempre están bien planteadas, y elementos como las D
 
 El docente elige calificar con la lista de cotejo en modo estricto: cada criterio se descuenta aunque la entrega esté completa (cifras que no salen de la tabla del alumno, respuestas genéricas o vacías, formato incorrecto). La prueba con RNAP E1-E2 mostró que la calificación previa, centrada en la entrega, coincidía con la lista estricta en solo 21 % a 53 % de los casos.
 
+**Principio general (2026-11-08).** Valorar lo que el alumno sí hizo: quien hizo el trabajo, aunque con errores, sube; la penalización fuerte se reserva para faltas graves (copia, texto genérico sin adaptar, huecos sin llenar, error conceptual) o para lo que no se hizo. Ante la duda entre dos niveles, se elige el más alto y se explica en la retroalimentación qué faltó.
+
 ### Niveles de las respuestas escritas (2026-11-06)
 
 Listas de 4 a 5 criterios. Cumple = 100 %, parcial = 70 %, no cumple = 0 %.
