@@ -8,12 +8,12 @@ import keyring
 from google import genai
 from google.genai import errors, types
 
-from revisor.puertos.ia import CuotaAgotada, IANoDisponible
+from revisor.puertos.ia import CuotaAgotada, IANoDisponible, ModeloNoDisponible
 
 SERVICIO, CUENTA = "revisor_nexus", "gemini_api_key"
 MODELO_POR_DEFECTO = "gemini-3.5-flash"
 # Modelos gratuitos con cuota diaria propia (sin Lite). "gemini-3.5-flash" se cobra a la cuota de 3.6.
-MODELOS_ROTACION = ("gemini-3.5-flash", "gemini-3.7-flash", "gemini-3.8-flash", "gemini-3-flash-preview")
+MODELOS_ROTACION = ("gemini-3.5-flash", "gemini-3.7-flash", "gemini-3.8-flash")
 _REINTENTABLES = {429, 500, 503}  # cuota por minuto agotada o servicio saturado
 
 
@@ -47,6 +47,8 @@ class ProveedorGemini:
                 )
                 return json.loads(respuesta.text or "{}")
             except errors.APIError as e:
+                if e.code == 404:
+                    raise ModeloNoDisponible(f"{self._modelo} no está disponible para este proyecto.") from e
                 if e.code == 429 and "PerDay" in str(e):
                     raise CuotaAgotada(f"Se agotó la cuota diaria de {self._modelo}.") from e
                 if e.code not in _REINTENTABLES or intento == self._reintentos:

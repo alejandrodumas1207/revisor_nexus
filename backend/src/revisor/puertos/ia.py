@@ -11,6 +11,10 @@ class CuotaAgotada(IANoDisponible):
     """Se acabó la cuota gratuita del día; la entrega pasa a otro modelo o a revisión con Claude."""
 
 
+class ModeloNoDisponible(IANoDisponible):
+    """El modelo no existe o no está habilitado para el proyecto; se salta en la rotación."""
+
+
 class ProveedorIA(Protocol):
     @property
     def modelo(self) -> str:

@@ -3,7 +3,7 @@
 from collections.abc import Sequence
 from typing import Any
 
-from revisor.puertos.ia import CuotaAgotada, ProveedorIA
+from revisor.puertos.ia import CuotaAgotada, ModeloNoDisponible, ProveedorIA
 
 
 class ProveedorRotativo:
@@ -28,9 +28,9 @@ class ProveedorRotativo:
                 continue
             try:
                 respuesta = proveedor.generar_json(instrucciones, contenido, esquema)
-            except CuotaAgotada:
+            except (CuotaAgotada, ModeloNoDisponible):
                 self._agotados.add(i)
                 continue
             self._ultimo = i
             return respuesta
-        raise CuotaAgotada("Todos los modelos gratuitos agotaron su cuota de hoy.")
+        raise CuotaAgotada("Ningún modelo gratuito tiene cuota disponible hoy.")

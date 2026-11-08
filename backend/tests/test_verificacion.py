@@ -30,6 +30,11 @@ def test_cifras_que_no_salen_del_cuaderno():
 
 
 def test_entrega_sin_trabajo():
-    assert sin_trabajo({"A": "", "B": "  "}, celdas_codigo=10, celdas_sin_ejecutar=10)
-    assert not sin_trabajo({"A": "", "B": ""}, celdas_codigo=10, celdas_sin_ejecutar=3)
-    assert not sin_trabajo({"A": "Mi respuesta", "B": ""}, celdas_codigo=10, celdas_sin_ejecutar=10)
+    assert sin_trabajo({"A": "", "B": "  "}, celdas_con_salida=0)
+    assert sin_trabajo({}, celdas_con_salida=0)
+
+
+def test_con_salidas_no_es_sin_trabajo_aunque_falte_numero_de_ejecucion():
+    # Plantilla no reconocida (sin respuestas extraídas) pero con celdas ejecutadas: sí hay trabajo
+    assert not sin_trabajo({}, celdas_con_salida=12)
+    assert not sin_trabajo({"A": "Mi respuesta"}, celdas_con_salida=0)

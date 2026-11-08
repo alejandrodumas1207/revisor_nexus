@@ -5,6 +5,7 @@ nombre ni matrícula), pide la evaluación a Gemini con la misma lista de cotejo
 referencia (datos_locales/rnap/<ACT>_revision_v2.json). Guarda cada respuesta para poder reanudar.
 
 Uso: uv run python ../herramientas/prueba_gemini.py E1D3 [--limite 5] [--modelo gemini-3.5-flash]
+Sin --modelo rota entre los gratuitos; si se acaba la cuota, deja las entregas para revisión con Claude.
 """
 
 import argparse
@@ -15,10 +16,13 @@ from pathlib import Path
 from typing import Any
 
 from revisor.adaptadores.extractores.notebook import NotebookInvalido, leer_notebook, texto_para_ia
-from revisor.adaptadores.ia.gemini import MODELO_POR_DEFECTO, ProveedorGemini
+from revisor.adaptadores.ia.gemini import MODELOS_ROTACION, ProveedorGemini
+from revisor.adaptadores.ia.rotacion import ProveedorRotativo
 from revisor.dominio.evaluacion import CriterioLista, Evaluacion
 from revisor.dominio.seudonimo import seudonimizar
-from revisor.servicios.revision import revisar_entrega
+from revisor.dominio.verificacion import cifras_no_encontradas, sin_trabajo
+from revisor.puertos.ia import CuotaAgotada, ProveedorIA
+from revisor.servicios.revision import revisar_entrega, seccion_verificacion
 
 RAIZ = Path(__file__).resolve().parent.parent / "datos_locales"
 FORMULARIOS = Path.home() / "Desktop" / "RNAP_Revision_E1_E2" / "formularios"
@@ -77,29 +81,88 @@ def _a_json(e: Evaluacion) -> dict[str, Any]:
     }
 
 
-def evaluar(actividad: str, limite: int | None, modelo: str) -> Path:
+def _proveedor(modelo: str | None) -> ProveedorIA:
+    """Un modelo fijo si se pide; si no, rotación entre los gratuitos sin Lite."""
+    if modelo:
+        return ProveedorGemini(modelo)
+    return ProveedorRotativo([ProveedorGemini(m) for m in MODELOS_ROTACION])
+
+
+def _sin_trabajo(lista: list[CriterioLista]) -> dict[str, Any]:
+    """Resultado sin IA para una entrega sin respuestas ni celdas ejecutadas."""
+    return {
+        "niveles": {c.id: "no_cumple" for c in lista},
+        "evidencia": {c.id: "Sin respuestas ni celdas con salida (verificado por código)." for c in lista},
+        "comentarios": {c.id: "Plantilla sin responder." for c in lista},
+        "comentarios_generales": "",
+        "alertas": [],
+        "modelo": "regla",
+        "version_prompt": "",
+    }
+
+
+def _dejar_para_claude(actividad: str, matricula: str, texto: str, verificacion: str) -> Path:
+    """Guarda la entrega seudonimizada para que Claude la revise desde Claude Code (sin costo extra)."""
+    carpeta = RAIZ / "gemini" / "pendientes_claude" / actividad
+    carpeta.mkdir(parents=True, exist_ok=True)
+    archivo = carpeta / f"{matricula}.txt"
+    archivo.write_text(f"{texto}\n\n{verificacion}", encoding="utf-8")
+    return archivo
+
+
+def _revisar_alumno(
+    a: dict[str, Any],
+    datos: tuple[bytes, str],
+    lista: list[CriterioLista],
+    actividad: str,
+    proveedor: ProveedorIA,
+    sin_cuota: bool,
+) -> tuple[dict[str, Any], bool]:
+    """Devuelve el resultado del alumno y si ya no queda cuota."""
+    contenido, nombre_nb = datos
+    reporte = leer_notebook(contenido)
+    if sin_trabajo(reporte.respuestas, reporte.celdas_con_salida):
+        return _sin_trabajo(lista), sin_cuota
+    faltantes = cifras_no_encontradas(reporte.respuestas, reporte.salidas)
+    texto = _texto_seguro(contenido, [a.get("nombre") or "", nombre_nb], a["matricula"])
+    if not sin_cuota:
+        try:
+            evaluacion = revisar_entrega(proveedor, lista, CONTEXTO[actividad], texto, faltantes)
+            return {**_a_json(evaluacion), "cifras_no_encontradas": faltantes}, False
+        except CuotaAgotada:
+            sin_cuota = True
+    archivo = _dejar_para_claude(actividad, a["matricula"], texto, seccion_verificacion(faltantes))
+    return {"pendiente_claude": str(archivo), "cifras_no_encontradas": faltantes}, sin_cuota
+
+
+def evaluar(actividad: str, limite: int | None, modelo: str | None) -> Path:
     rev = json.loads((RAIZ / "rnap" / f"{actividad}_revision_v2.json").read_text(encoding="utf-8"))
     destino = RAIZ / "gemini" / f"{actividad}.json"
     destino.parent.mkdir(parents=True, exist_ok=True)
     hechos: dict[str, Any] = json.loads(destino.read_text(encoding="utf-8")) if destino.exists() else {}
-    notebooks, lista, proveedor = _notebooks(actividad), _lista(rev), ProveedorGemini(modelo)
+    notebooks, lista, proveedor = _notebooks(actividad), _lista(rev), _proveedor(modelo)
     pendientes = [
         a
         for a in rev["alumnos"]
-        if a.get("niveles") and a["matricula"] in notebooks and a["matricula"] not in hechos
+        if a.get("niveles")
+        and a["matricula"] in notebooks
+        and "niveles" not in hechos.get(a["matricula"], {})
     ]
+    sin_cuota = False
     for a in pendientes[:limite]:
-        contenido, nombre_nb = notebooks[a["matricula"]]
         inicio = time.time()
         try:
-            texto = _texto_seguro(contenido, [a.get("nombre") or "", nombre_nb], a["matricula"])
-            hechos[a["matricula"]] = _a_json(revisar_entrega(proveedor, lista, CONTEXTO[actividad], texto))
-            print(f"{a['matricula']}: listo en {time.time() - inicio:.0f} s")
+            hechos[a["matricula"]], sin_cuota = _revisar_alumno(
+                a, notebooks[a["matricula"]], lista, actividad, proveedor, sin_cuota
+            )
+            estado = hechos[a["matricula"]].get("modelo") or "pendiente para Claude"
+            print(f"{a['matricula']}: {estado} ({time.time() - inicio:.0f} s)")
         except Exception as e:
             hechos[a["matricula"]] = {"error": str(e)[:300]}
             print(f"{a['matricula']}: ERROR {str(e)[:120]}")
         destino.write_text(json.dumps(hechos, ensure_ascii=False, indent=1), encoding="utf-8")
-        time.sleep(PAUSA)
+        if not sin_cuota and hechos[a["matricula"]].get("modelo") not in (None, "regla"):
+            time.sleep(PAUSA)
     return destino
 
 
@@ -107,7 +170,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("actividad", choices=sorted(PATRON))
     parser.add_argument("--limite", type=int, default=None)
-    parser.add_argument("--modelo", default=MODELO_POR_DEFECTO)
+    parser.add_argument("--modelo", default=None, help="un modelo fijo; si se omite, rotación")
     args = parser.parse_args()
     print(f"-> {evaluar(args.actividad, args.limite, args.modelo)}")
 

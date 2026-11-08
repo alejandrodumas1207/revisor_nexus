@@ -3,7 +3,7 @@ from typing import Any
 import pytest
 
 from revisor.adaptadores.ia.rotacion import ProveedorRotativo
-from revisor.puertos.ia import CuotaAgotada
+from revisor.puertos.ia import CuotaAgotada, ModeloNoDisponible
 
 
 class Modelo:
@@ -40,5 +40,19 @@ def test_pasa_al_siguiente_y_no_vuelve_al_agotado():
 
 def test_todos_agotados():
     rotativo = ProveedorRotativo([Modelo("a", 0), Modelo("b", 0)])
-    with pytest.raises(CuotaAgotada, match="Todos"):
+    with pytest.raises(CuotaAgotada, match="Ningún"):
         rotativo.generar_json("", "", {})
+
+
+class Inexistente(Modelo):
+    def generar_json(self, instrucciones: str, contenido: str, esquema: dict[str, Any]) -> dict[str, Any]:
+        self.llamadas += 1
+        raise ModeloNoDisponible(self.modelo)
+
+
+def test_modelo_inexistente_se_salta():
+    fantasma, b = Inexistente("fantasma", 9), Modelo("b", 5)
+    rotativo = ProveedorRotativo([fantasma, b])
+    assert rotativo.generar_json("", "", {}) == {"modelo": "b"}
+    rotativo.generar_json("", "", {})
+    assert fantasma.llamadas == 1

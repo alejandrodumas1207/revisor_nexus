@@ -49,7 +49,9 @@ def cifras_no_encontradas(respuestas: Mapping[str, str], salidas: str) -> dict[s
     return {i: c for i, c in faltantes.items() if c}
 
 
-def sin_trabajo(respuestas: Mapping[str, str], celdas_codigo: int, celdas_sin_ejecutar: int) -> bool:
-    """Todas las respuestas vacías y ninguna celda ejecutada: no hay nada que revisar con IA."""
-    vacias = all(not t.strip() for t in respuestas.values())
-    return vacias and (celdas_codigo == 0 or celdas_sin_ejecutar >= celdas_codigo)
+def sin_trabajo(respuestas: Mapping[str, str], celdas_con_salida: int) -> bool:
+    """Ninguna celda con salidas y ninguna respuesta escrita: no hay nada que revisar con IA.
+
+    No se usa el número de ejecución: Colab a veces guarda notebooks ejecutados sin él.
+    """
+    return celdas_con_salida == 0 and all(not t.strip() for t in respuestas.values())

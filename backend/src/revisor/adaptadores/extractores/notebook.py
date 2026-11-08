@@ -56,6 +56,7 @@ class ReporteNotebook:
     verificacion: tuple[tuple[bool, str], ...]
     resumen: dict[str, str] = field(default_factory=dict[str, str])
     salidas: str = ""  # texto de todas las salidas, para verificar las cifras citadas
+    celdas_con_salida: int = 0  # Colab a veces guarda salidas sin número de ejecución
 
     @property
     def respuestas_vacias(self) -> list[str]:
@@ -88,6 +89,7 @@ def leer_notebook(contenido: bytes) -> ReporteNotebook:
         ),
         resumen=_resumen(salidas),
         salidas=salidas,
+        celdas_con_salida=sum(1 for c in codigo if c.get("outputs")),
     )
 
 
