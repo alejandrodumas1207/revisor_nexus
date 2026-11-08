@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from revisor.adaptadores.extractores.notebook import NotebookInvalido, leer_notebook
+from revisor.adaptadores.extractores.notebook import NotebookInvalido, leer_notebook, texto_para_ia
 
 
 def _celda_md(texto: str) -> dict[str, object]:
@@ -116,6 +116,20 @@ def test_plantilla_etapa_2():
     assert r.respuestas == {"P03": "Porque se filtra el futuro."}
     assert "modelo = keras.Sequential([])" in r.bloques["P05"].codigo
     assert r.bloques["P05"].error == "NameError: keras"
+
+
+def test_texto_para_ia_sin_imagenes_y_con_salidas_recortadas():
+    celdas = [
+        _celda_md("## Pregunta - 1"),
+        _celda_code("print('x' * 50)", [{"output_type": "stream", "text": "x" * 50}]),
+        _celda_code("plt.show()", [{"output_type": "display_data", "data": {"image/png": "AAAA" * 1000}}]),
+        _celda_code("y = 1", n=None),
+    ]
+    texto = texto_para_ia(json.dumps({"cells": celdas}).encode(), limite_salida=10)
+    assert "[Celda 1 · TEXTO]\n## Pregunta - 1" in texto
+    assert "xxxxxxxxxx …(recortada)" in texto
+    assert "[Salida] 1 gráfica(s)" in texto and "AAAA" not in texto
+    assert "(celda sin ejecutar)" in texto
 
 
 def test_archivo_que_no_es_notebook():

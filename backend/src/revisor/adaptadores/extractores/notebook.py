@@ -89,6 +89,36 @@ def leer_notebook(contenido: bytes) -> ReporteNotebook:
     )
 
 
+def texto_para_ia(contenido: bytes, limite_salida: int = 1500) -> str:
+    """El notebook como texto plano para la revisión: celdas en orden, salidas recortadas, sin imágenes."""
+    try:
+        celdas: list[dict[str, Any]] = json.loads(contenido.decode("utf-8-sig"))["cells"]
+    except (UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError) as e:
+        raise NotebookInvalido("No es un notebook de Jupyter válido.") from e
+    partes: list[str] = []
+    for i, c in enumerate(celdas, start=1):
+        tipo = "TEXTO" if c.get("cell_type") == "markdown" else "CÓDIGO"
+        partes.append(f"[Celda {i} · {tipo}]\n{_texto(c.get('source')).strip()}")
+        if c.get("cell_type") == "code":
+            partes.append(_salidas_para_ia(c, limite_salida))
+    return "\n\n".join(p for p in partes if p.strip())
+
+
+def _salidas_para_ia(celda: dict[str, Any], limite: int) -> str:
+    salidas: list[dict[str, Any]] = celda.get("outputs") or []
+    if celda.get("execution_count") is None and _texto(celda.get("source")).strip():
+        return "[Salida] (celda sin ejecutar)"
+    imagenes = sum(1 for s in salidas if "image/png" in (s.get("data") or {}))
+    error = _error(celda)
+    texto = _salida_texto(celda).strip()
+    lineas = (
+        [f"[Salida]\n{texto[:limite]}" + (" …(recortada)" if len(texto) > limite else "")] if texto else []
+    )
+    lineas += [f"[Salida] {imagenes} gráfica(s)"] if imagenes else []
+    lineas += [f"[Error] {error}"] if error else []
+    return "\n".join(lineas)
+
+
 def _texto(fuente: object) -> str:
     if isinstance(fuente, list):
         return "".join(str(x) for x in fuente)  # pyright: ignore[reportUnknownVariableType]
