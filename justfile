@@ -49,8 +49,8 @@ listar:
 descargar curso +elementos:
     cd backend; uv run python ../herramientas/descargar.py --curso "{{curso}}" --elementos {{elementos}}
 
-# Flujo completo de revisión con IA (no sube nada): just revisar "Redes" 3.2
-revisar curso +elementos:
+# Flujo completo de revisión con IA (no sube nada): just revisar-ia "Redes" 3.2
+revisar-ia curso +elementos:
     cd backend; uv run python ../herramientas/revisar.py --curso "{{curso}}" --elementos {{elementos}}
 
 # Importa a la base el historial validado de RNAP E1-E2

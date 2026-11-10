@@ -20,7 +20,7 @@ just revisar       # lint, tipos, pruebas y auditoría de seguridad
 just clave         # guarda la clave de Gemini en el administrador de credenciales
 just listar        # cursos y actividades de NEXUS (solo lectura)
 just descargar "Redes" 3.2 3.4   # descarga entregas por actividad
-just revisar "Redes" 3.2         # descarga y revisa con IA; nada se sube
+just revisar-ia "Redes" 3.2      # descarga y revisa con IA; nada se sube
 ```
 
 ## Cómo está hecho
