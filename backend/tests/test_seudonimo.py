@@ -1,4 +1,4 @@
-from revisor.dominio.seudonimo import seudonimizar
+from revisor.dominio.seudonimo import datos_personales_restantes, seudonimizar
 
 
 def test_reemplaza_matricula_y_nombre_con_o_sin_acentos():
@@ -18,3 +18,9 @@ def test_no_toca_particulas_cortas_ni_otros_numeros():
 
 def test_nombre_en_archivo_con_guiones_bajos():
     assert "Tamez" not in seudonimizar("E2_D3_Tamez_García.ipynb", ["Tamez_García"])
+
+
+def test_detecta_datos_personales_restantes():
+    nombres = ["Prueba Luna Ana"]
+    assert datos_personales_restantes(seudonimizar("Ana Prueba 2012345", nombres), nombres) == []
+    assert datos_personales_restantes("Hecho por LUNA, 2012345", nombres) == ["2012345", "Luna"]

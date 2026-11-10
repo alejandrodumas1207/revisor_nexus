@@ -24,3 +24,14 @@ def seudonimizar(texto: str, nombres: Iterable[str], alias: str = "ALUMNO") -> s
         patron = re.compile(f"{_BORDE_INICIO}(?:{variantes}){_BORDE_FIN}", re.IGNORECASE)
         resultado = patron.sub(alias, resultado)
     return resultado
+
+
+def datos_personales_restantes(texto: str, nombres: Iterable[str]) -> list[str]:
+    """Palabras del nombre o matrículas que siguen en el texto. Si hay alguna, el texto no se envía."""
+    restos = _MATRICULA.findall(texto)
+    for nombre in nombres:
+        for palabra in re.split(r"[\s_]+", nombre):
+            patron = f"{_BORDE_INICIO}(?:{re.escape(palabra)}|{re.escape(_sin_acentos(palabra))}){_BORDE_FIN}"
+            if len(palabra) >= _LONGITUD_MINIMA and re.search(patron, texto, re.IGNORECASE):
+                restos.append(palabra)
+    return restos

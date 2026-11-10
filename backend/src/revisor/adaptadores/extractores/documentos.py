@@ -17,8 +17,9 @@ import defusedxml.ElementTree as xml_seguro
 import numpy as np
 import pypdfium2 as pdfium
 
-from revisor.adaptadores.extractores.notebook import NotebookInvalido, texto_para_ia
+from revisor.adaptadores.extractores.notebook import NotebookInvalido, leer_notebook, texto_para_ia
 from revisor.dominio.contenido import ContenidoEntrega, ImagenPagina
+from revisor.dominio.verificacion import cifras_no_encontradas
 
 IMAGENES = {".jpg", ".jpeg", ".png", ".bmp", ".webp", ".tif", ".tiff"}
 MULTIMEDIA = {".mp4", ".mov", ".avi", ".mkv", ".m4a", ".mp3", ".wav", ".ogg", ".opus"}
@@ -87,7 +88,11 @@ def _bgr(imagen: np.ndarray) -> np.ndarray:
 
 def _notebook(nombre: str, datos: bytes) -> ContenidoEntrega:
     try:
-        return ContenidoEntrega(f"[Archivo {nombre}]\n{texto_para_ia(datos)}")
+        reporte = leer_notebook(datos)
+        faltantes = {
+            k: tuple(v) for k, v in cifras_no_encontradas(reporte.respuestas, reporte.salidas).items()
+        }
+        return ContenidoEntrega(f"[Archivo {nombre}]\n{texto_para_ia(datos)}", cifras_faltantes=faltantes)
     except NotebookInvalido:
         texto = datos.decode("utf-8", errors="replace")
         return ContenidoEntrega(f"[Archivo {nombre}]\n{texto[:20000]}")

@@ -15,6 +15,9 @@ class ContenidoEntrega:
     texto: str
     imagenes: tuple[ImagenPagina, ...] = ()
     avisos: tuple[str, ...] = ()  # archivos que no se pudieron leer (video, audio, dañados)
+    cifras_faltantes: dict[str, tuple[str, ...]] | None = (
+        None  # solo notebooks: cifras que no salen de sus salidas
+    )
 
     @property
     def vacio(self) -> bool:
@@ -26,7 +29,11 @@ def unir(contenidos: list[ContenidoEntrega], limite_imagenes: int) -> ContenidoE
     texto = "\n\n".join(c.texto for c in contenidos if c.texto.strip())
     imagenes = tuple(i for c in contenidos for i in c.imagenes)
     avisos = [a for c in contenidos for a in c.avisos]
+    cifras = {
+        k: v for c in contenidos if c.cifras_faltantes is not None for k, v in c.cifras_faltantes.items()
+    }
+    hay_notebook = any(c.cifras_faltantes is not None for c in contenidos)
     if len(imagenes) > limite_imagenes:
         avisos.append(f"Se enviaron {limite_imagenes} de {len(imagenes)} imágenes a la revisión.")
         imagenes = imagenes[:limite_imagenes]
-    return ContenidoEntrega(texto, imagenes, tuple(avisos))
+    return ContenidoEntrega(texto, imagenes, tuple(avisos), cifras if hay_notebook else None)

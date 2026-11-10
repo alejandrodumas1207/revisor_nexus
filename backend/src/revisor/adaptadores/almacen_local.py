@@ -28,6 +28,23 @@ class AlmacenLocal:
         if destino.suffix.lower() == ".zip":
             self._descomprimir(destino)
 
+    def leer(self, ruta: PurePath) -> bytes:
+        return self._resolver(ruta).read_bytes()
+
+    def archivos_de(self, carpeta: PurePath, matricula: str) -> list[PurePath]:
+        base = self._resolver(carpeta)
+        if not base.is_dir():
+            return []
+        archivos: list[PurePath] = []
+        for p in sorted(base.iterdir()):
+            if not p.name.startswith(f"{matricula}_") or p.name.endswith(".parcial"):
+                continue
+            if p.is_dir():
+                archivos += [x.relative_to(self._base) for x in sorted(p.rglob("*")) if x.is_file()]
+            elif p.suffix.lower() != ".zip" or not p.with_suffix("").is_dir():
+                archivos.append(p.relative_to(self._base))
+        return archivos
+
     def _resolver(self, ruta: PurePath) -> Path:
         # Sin resolve(): en Windows cambia según exista o no la carpeta y falla con hilos simultáneos
         if ruta.is_absolute() or ruta.anchor or ".." in ruta.parts:
