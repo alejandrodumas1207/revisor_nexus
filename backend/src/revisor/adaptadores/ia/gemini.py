@@ -5,6 +5,7 @@ import time
 from collections.abc import Sequence
 from typing import Any
 
+import httpx
 import keyring
 from google import genai
 from google.genai import errors, types
@@ -60,5 +61,9 @@ class ProveedorGemini:
                     raise CuotaAgotada(f"Se agotó la cuota diaria de {self._modelo}.") from e
                 if e.code not in _REINTENTABLES or intento == self._reintentos:
                     raise IANoDisponible(f"{self._modelo} respondió {e.code}: {str(e)[:200]}") from e
+                time.sleep(self._espera_base * (2**intento))
+            except httpx.TransportError as e:  # corte de internet o del servidor: se reintenta igual
+                if intento == self._reintentos:
+                    raise IANoDisponible(f"{self._modelo}: sin conexión ({type(e).__name__}).") from e
                 time.sleep(self._espera_base * (2**intento))
         raise IANoDisponible(f"{self._modelo} no respondió.")
