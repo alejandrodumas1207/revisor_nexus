@@ -125,6 +125,8 @@ Antes de construir se valida un prototipo de la pantalla de revisión.
 
 ## Fases
 
+Estado al 2026-11-09: fases 0 y 1 cerradas. Pendiente de la fase 0: completar la medición de Gemini en las cuatro actividades de RNAP E1-E2 (limitada por la cuota diaria gratuita).
+
 | Fase | Entregable |
 |---|---|
 | 0. Arranque e investigación | Repo, herramientas y CLAUDE.md. Captura del endpoint de guardado de NEXUS. Prueba de Gemini con 10 entregas reales anonimizadas (libreta, notebook y PDF). |

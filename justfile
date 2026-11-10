@@ -40,3 +40,19 @@ verificar-clave:
 # Registra lo que NEXUS envía al guardar una calificación (fase 0)
 capturar:
     cd backend; uv run python ../herramientas/capturar_guardado.py
+
+# Lista cursos y actividades de NEXUS (solo lectura)
+listar:
+    cd backend; uv run python ../herramientas/descargar.py --listar
+
+# Descarga actividades: just descargar "Redes" 3.2 3.4
+descargar curso +elementos:
+    cd backend; uv run python ../herramientas/descargar.py --curso "{{curso}}" --elementos {{elementos}}
+
+# Flujo completo de revisión con IA (no sube nada): just revisar "Redes" 3.2
+revisar curso +elementos:
+    cd backend; uv run python ../herramientas/revisar.py --curso "{{curso}}" --elementos {{elementos}}
+
+# Importa a la base el historial validado de RNAP E1-E2
+importar-rnap:
+    cd backend; uv run python ../herramientas/importar_rnap.py
