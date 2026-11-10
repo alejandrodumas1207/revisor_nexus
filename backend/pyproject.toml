@@ -4,12 +4,16 @@ version = "0.1.0"
 description = "Descarga, revisión asistida y carga de calificaciones en NEXUS UANL"
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "defusedxml>=0.7.1",
     "google-genai>=3.0.0",
     "httpx>=0.28",
     "keyring>=25",
+    "numpy>=2.5.4",
+    "opencv-python-headless>=5.0.0.93",
     "openpyxl>=3.1.5",
     "playwright>=1.56",
     "pydantic>=2.9",
+    "pypdfium2>=5.15.2",
 ]
 
 [dependency-groups]
@@ -20,6 +24,7 @@ dev = [
     "pytest>=8.3",
     "pytest-cov>=6.0",
     "ruff>=0.8",
+    "types-defusedxml>=0.7.0.20260504",
 ]
 
 [build-system]
