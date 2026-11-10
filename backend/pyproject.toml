@@ -51,6 +51,7 @@ known-first-party = ["revisor"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "S105", "S106"]  # assert y tokens de ejemplo
+"src/revisor/adaptadores/persistencia/sqlite.py" = ["E501"]  # SQL legible en una línea por cláusula
 
 [tool.pyright]
 include = ["src", "tests"]
