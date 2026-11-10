@@ -15,8 +15,12 @@ class CriterioLista:
     nombre: str
     puntos: float
     cumple: str
-    parcial: str
+    parcial: str  # vacío = criterio binario (solo cumple o no cumple)
     no_cumple: str
+
+    @property
+    def binario(self) -> bool:
+        return not self.parcial.strip()
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,6 +60,8 @@ def evaluacion_desde_datos(
         nivel = str(bruto.get("nivel", ""))
         if nivel not in NIVELES:
             raise EvaluacionInvalida(f"Nivel desconocido en {c.id}: {nivel!r}")
+        if c.binario and nivel == "parcial":
+            raise EvaluacionInvalida(f"{c.id} es de cumple o no cumple; no admite parcial.")
         criterios[c.id] = EvaluacionCriterio(
             nivel, str(bruto.get("evidencia", "")), str(bruto.get("comentario", ""))
         )

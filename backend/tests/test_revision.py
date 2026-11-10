@@ -107,3 +107,14 @@ def test_imagenes_se_envian_con_su_indice_y_se_lee_la_marca():
 
 def test_sin_marca_en_la_respuesta_queda_sin_dato():
     assert revisar_entrega(ProveedorFalso(_respuesta()), LISTA, "E1D3", "x").marca_revision is None
+
+
+def test_criterio_binario_no_admite_parcial():
+    binaria = (CriterioLista("C1", "Entregó el mapa", 100, "Mapa completo", "", "Falta o no corresponde"),)
+    respuesta = {
+        **_respuesta(),
+        "criterios": [{"id": "C1", "nivel": "parcial", "evidencia": "e", "comentario": "c"}],
+    }
+    assert "NO APLICA" in construir_instrucciones(binaria, "E3D2")
+    with pytest.raises(EvaluacionInvalida, match="cumple o no cumple"):
+        revisar_entrega(ProveedorFalso(respuesta), binaria, "E3D2", "x")

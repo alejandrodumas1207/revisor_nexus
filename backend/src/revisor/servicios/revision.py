@@ -12,7 +12,7 @@ from revisor.dominio.evaluacion import NIVELES, CriterioLista, Evaluacion, evalu
 from revisor.dominio.modelos import Origen
 from revisor.puertos.ia import ProveedorIA
 
-VERSION_PROMPT = "revision-v3"
+VERSION_PROMPT = "revision-v4"  # v4: criterios binarios
 
 _REGLAS = """Eres revisor de entregas de un profesor de preparatoria técnica (UANL). Evalúas UNA entrega
 (notebook, PDF, Word, presentación o fotos, convertida a texto e imágenes) con la lista de cotejo que se
@@ -68,12 +68,16 @@ SALIDA por criterio:
 
 
 def construir_instrucciones(lista: Sequence[CriterioLista], contexto: str) -> str:
-    criterios = "\n".join(
-        f"- {c.id} · {c.nombre} ({c.puntos:g} pts)\n  cumple: {c.cumple}\n  parcial: {c.parcial}\n"
-        f"  no_cumple: {c.no_cumple}"
-        for c in lista
-    )
+    criterios = "\n".join(_criterio_texto(c) for c in lista)
     return f"{_REGLAS}\n\nACTIVIDAD: {contexto}\n\nLISTA DE COTEJO:\n{criterios}"
+
+
+def _criterio_texto(c: CriterioLista) -> str:
+    parcial = "NO APLICA: este criterio es solo cumple o no_cumple" if c.binario else c.parcial
+    return (
+        f"- {c.id} · {c.nombre} ({c.puntos:g} pts)\n  cumple: {c.cumple}\n  parcial: {parcial}\n"
+        f"  no_cumple: {c.no_cumple}"
+    )
 
 
 def esquema_respuesta(lista: Sequence[CriterioLista]) -> dict[str, Any]:
