@@ -111,6 +111,16 @@ Criterios de diseño para evitar el aspecto genérico de IA:
 
 Antes de construir se valida un prototipo de la pantalla de revisión.
 
+### Agregado a la fase 2 (2026-11-10)
+
+- **Conversación dentro de la app.** Un panel para escribir mientras revisas:
+  - con **Gemini** directamente (gratis), sobre la entrega abierta: "¿por qué le pusiste parcial en C3?", "vuelve a revisar la imagen 2";
+  - con **Claude** mediante Claude Code (con la suscripción, sin API de pago): la pregunta queda en una bandeja que Claude atiende desde Claude Code con el servidor MCP, y la respuesta aparece en la app.
+  Lo que se acuerde en la conversación (un nivel corregido, una regla nueva) se guarda como decisión del docente, nunca lo aplica la IA sola.
+- **Interruptores por alumno** para formato, tardanza y copia (ADR 0005), con recálculo inmediato de calificación y retroalimentación.
+- **Biblioteca de listas de cotejo por semestre y materia**, para reutilizarlas y ajustarlas cada periodo.
+- **Trabajo en equipo.** Registro de equipos por actividad: una entrega idéntica dentro del mismo equipo no es copia.
+
 ## Calidad, seguridad y auditoría
 
 - **Herramientas**: instalar git (hoy no está), con commits pequeños y convencionales. `uv`, `ruff`, `pyright` en modo estricto en `dominio` y `servicios`, `pytest` con cobertura en servicios. Frontend con ESLint/Biome, Vitest y tipos generados del OpenAPI de FastAPI. `pre-commit` corre todo esto.
