@@ -2,6 +2,7 @@
 
 import json
 import time
+from collections.abc import Sequence
 from typing import Any
 
 import keyring
@@ -33,7 +34,9 @@ class ProveedorGemini:
     def modelo(self) -> str:
         return self._modelo
 
-    def generar_json(self, instrucciones: str, contenido: str, esquema: dict[str, Any]) -> dict[str, Any]:
+    def generar_json(
+        self, instrucciones: str, contenido: str, esquema: dict[str, Any], imagenes: Sequence[bytes] = ()
+    ) -> dict[str, Any]:
         config = types.GenerateContentConfig(
             system_instruction=instrucciones,
             response_mime_type="application/json",
@@ -42,8 +45,12 @@ class ProveedorGemini:
         )
         for intento in range(self._reintentos + 1):
             try:
+                partes = [
+                    contenido,
+                    *(types.Part.from_bytes(data=i, mime_type="image/jpeg") for i in imagenes),
+                ]
                 respuesta = self._cliente.models.generate_content(
-                    model=self._modelo, contents=contenido, config=config
+                    model=self._modelo, contents=partes, config=config
                 )
                 return json.loads(respuesta.text or "{}")
             except errors.APIError as e:

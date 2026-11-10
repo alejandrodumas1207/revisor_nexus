@@ -1,7 +1,9 @@
+from collections.abc import Sequence
 from typing import Any
 
 import pytest
 
+from revisor.dominio.contenido import ImagenPagina
 from revisor.dominio.evaluacion import CriterioLista, EvaluacionInvalida
 from revisor.dominio.modelos import Origen
 from revisor.servicios.revision import (
@@ -24,8 +26,11 @@ class ProveedorFalso:
         self.respuesta = respuesta
         self.recibido: tuple[str, str, dict[str, Any]] | None = None
 
-    def generar_json(self, instrucciones: str, contenido: str, esquema: dict[str, Any]) -> dict[str, Any]:
+    def generar_json(
+        self, instrucciones: str, contenido: str, esquema: dict[str, Any], imagenes: Sequence[bytes] = ()
+    ) -> dict[str, Any]:
         self.recibido = (instrucciones, contenido, esquema)
+        self.imagenes = list(imagenes)
         return self.respuesta
 
 
@@ -88,3 +93,17 @@ def test_verificacion_sin_faltantes():
     proveedor = ProveedorFalso(_respuesta())
     revisar_entrega(proveedor, LISTA, "E1D3", "texto", {})
     assert proveedor.recibido is not None and "todas las cifras citadas" in proveedor.recibido[1]
+
+
+def test_imagenes_se_envian_con_su_indice_y_se_lee_la_marca():
+    respuesta = {**_respuesta(), "marca_revision": {"hay": True, "detalle": "Rayón rosa en la imagen 2."}}
+    proveedor = ProveedorFalso(respuesta)
+    imagenes = [ImagenPagina("libreta.pdf", 1, b"jpg1"), ImagenPagina("libreta.pdf", 2, b"jpg2")]
+    evaluacion = revisar_entrega(proveedor, LISTA, "E1D2", "texto", imagenes=imagenes)
+    assert proveedor.imagenes == [b"jpg1", b"jpg2"]
+    assert proveedor.recibido is not None and "[Imagen 2] libreta.pdf, página 2" in proveedor.recibido[1]
+    assert evaluacion.marca_revision is True and "rosa" in evaluacion.detalle_marca
+
+
+def test_sin_marca_en_la_respuesta_queda_sin_dato():
+    assert revisar_entrega(ProveedorFalso(_respuesta()), LISTA, "E1D3", "x").marca_revision is None

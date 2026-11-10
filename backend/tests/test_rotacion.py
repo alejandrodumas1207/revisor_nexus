@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import Any
 
 import pytest
@@ -12,7 +13,9 @@ class Modelo:
         self.cuota = cuota
         self.llamadas = 0
 
-    def generar_json(self, instrucciones: str, contenido: str, esquema: dict[str, Any]) -> dict[str, Any]:
+    def generar_json(
+        self, instrucciones: str, contenido: str, esquema: dict[str, Any], imagenes: Sequence[bytes] = ()
+    ) -> dict[str, Any]:
         self.llamadas += 1
         if self.cuota <= 0:
             raise CuotaAgotada(self.modelo)
@@ -45,7 +48,9 @@ def test_todos_agotados():
 
 
 class Inexistente(Modelo):
-    def generar_json(self, instrucciones: str, contenido: str, esquema: dict[str, Any]) -> dict[str, Any]:
+    def generar_json(
+        self, instrucciones: str, contenido: str, esquema: dict[str, Any], imagenes: Sequence[bytes] = ()
+    ) -> dict[str, Any]:
         self.llamadas += 1
         raise ModeloNoDisponible(self.modelo)
 

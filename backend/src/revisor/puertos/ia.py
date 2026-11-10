@@ -1,5 +1,6 @@
 """Contrato con un proveedor de IA. El adaptador real usa Gemini; las pruebas usan uno simulado."""
 
+from collections.abc import Sequence
 from typing import Any, Protocol
 
 
@@ -21,6 +22,8 @@ class ProveedorIA(Protocol):
         """Modelo que generó la última respuesta (queda en la procedencia)."""
         ...
 
-    def generar_json(self, instrucciones: str, contenido: str, esquema: dict[str, Any]) -> dict[str, Any]:
-        """Devuelve la respuesta del modelo como JSON que respeta `esquema`."""
+    def generar_json(
+        self, instrucciones: str, contenido: str, esquema: dict[str, Any], imagenes: Sequence[bytes] = ()
+    ) -> dict[str, Any]:
+        """Respuesta como JSON que respeta `esquema`. `imagenes`: páginas en JPEG que el modelo debe ver."""
         ...

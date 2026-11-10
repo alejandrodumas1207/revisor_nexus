@@ -22,12 +22,14 @@ class ProveedorRotativo:
     def disponibles(self) -> list[str]:
         return [p.modelo for i, p in enumerate(self._proveedores) if i not in self._agotados]
 
-    def generar_json(self, instrucciones: str, contenido: str, esquema: dict[str, Any]) -> dict[str, Any]:
+    def generar_json(
+        self, instrucciones: str, contenido: str, esquema: dict[str, Any], imagenes: Sequence[bytes] = ()
+    ) -> dict[str, Any]:
         for i, proveedor in enumerate(self._proveedores):
             if i in self._agotados:
                 continue
             try:
-                respuesta = proveedor.generar_json(instrucciones, contenido, esquema)
+                respuesta = proveedor.generar_json(instrucciones, contenido, esquema, imagenes)
             except (CuotaAgotada, ModeloNoDisponible):
                 self._agotados.add(i)
                 continue

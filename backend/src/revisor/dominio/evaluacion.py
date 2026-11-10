@@ -34,6 +34,8 @@ class Evaluacion:
     origen: Origen
     modelo: str
     version_prompt: str
+    marca_revision: bool | None = None  # ¿la IA vio firma o marcador del profesor? None = no aplica
+    detalle_marca: str = ""
 
 
 class EvaluacionInvalida(ValueError):
@@ -59,4 +61,16 @@ def evaluacion_desde_datos(
         )
     alertas = tuple(str(a) for a in datos.get("alertas", []) if str(a).strip())
     generales = str(datos.get("comentarios_generales") or "")
-    return Evaluacion(criterios, generales, alertas, origen, modelo, version_prompt)
+    marca: Mapping[str, Any] = datos.get("marca_revision") or {}
+    hay: object = marca.get("hay")
+    detalle = str(marca.get("detalle") or "")
+    return Evaluacion(
+        criterios,
+        generales,
+        alertas,
+        origen,
+        modelo,
+        version_prompt,
+        hay if isinstance(hay, bool) else None,
+        detalle,
+    )

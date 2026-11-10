@@ -7,14 +7,16 @@ para saber con qué criterios se propuso cada calificación.
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from revisor.dominio.contenido import ImagenPagina
 from revisor.dominio.evaluacion import NIVELES, CriterioLista, Evaluacion, evaluacion_desde_datos
 from revisor.dominio.modelos import Origen
 from revisor.puertos.ia import ProveedorIA
 
-VERSION_PROMPT = "revision-v2"
+VERSION_PROMPT = "revision-v3"
 
 _REGLAS = """Eres revisor de entregas de un profesor de preparatoria técnica (UANL). Evalúas UNA entrega
-(un notebook de Jupyter convertido a texto) con la lista de cotejo que se te da. Escribe en español,
+(notebook, PDF, Word, presentación o fotos, convertida a texto e imágenes) con la lista de cotejo que se
+te da. Escribe en español,
 directo, sin elogios vacíos. El nombre y la matrícula del alumno fueron reemplazados por ALUMNO y
 [MATRICULA].
 
@@ -36,18 +38,29 @@ NIVELES de cada criterio:
 - La plantilla fija la semilla aleatoria: que los resultados coincidan con los esperados es normal.
   Verifica que las cifras que el alumno cita en sus respuestas salgan de las salidas de SU notebook.
 
-NO evalúes formato de archivo, nombre del archivo, entrega tardía ni copia: eso se revisa aparte.
+IMÁGENES: la entrega puede traer imágenes (páginas escaneadas, fotos de libreta, diagramas, mapas
+conceptuales, diapositivas). Al final del texto viene un índice "[Imagen k] archivo, página n". Léelas con
+atención: transcribe mentalmente la escritura a mano, sigue las flechas y conexiones de los diagramas y
+evalúa su contenido igual que el texto. Si una parte no se lee (borrosa, cortada, de cabeza), dilo en
+"alertas" y evalúa con lo que sí se ve; no supongas lo que no puedes leer. En la evidencia y los
+comentarios cita la imagen y página ("en la imagen 2, página 3, tu mapa conecta ...").
 
-SALIDA por criterio:
-- "evidencia" (para el profesor): qué viste y dónde (pregunta, celda, cifra), en una o dos oraciones.
-- "comentario" (para el alumno): 1 a 3 oraciones; primero lo que está bien, después lo que falta o está
-  mal. SIEMPRE cita cifras y preguntas concretas de su notebook (por ejemplo "en E1D3-06 citas 0.7120 con
-  maxlen 5"); nunca digas solo "citaste bien los valores". Sin calificaciones ni puntos.
+MARCA DE REVISIÓN: en "marca_revision" indica si en alguna imagen ves la firma o rayón de marcador del
+PROFESOR (un trazo o firma grande sobre el trabajo, típicamente en otro color), y dónde. No cuentes la
+letra del alumno ni subrayados de su propio trabajo. Si no hay imágenes, "hay" = false.
+
+NO evalúes formato de archivo, nombre del archivo, entrega tardía ni copia: eso se revisa aparte.
 
 VERIFICACIÓN AUTOMÁTICA: al final de la entrega puede venir una sección hecha por código (confiable) con
 las cifras que el alumno cita y que NO aparecen en las salidas de su notebook. Úsala: una respuesta con
 razonamiento correcto pero cifras que no salen de su cuaderno es "parcial"; si además el texto es
 genérico, "no_cumple". Si la sección dice que todas las cifras coinciden, no busques errores numéricos.
+
+SALIDA por criterio:
+- "evidencia" (para el profesor): qué viste y dónde (pregunta, celda, imagen, cifra), en una o dos oraciones.
+- "comentario" (para el alumno): 1 a 3 oraciones; primero lo que está bien, después lo que falta o está
+  mal. SIEMPRE cita cifras, preguntas o partes concretas de su trabajo (por ejemplo "en E1D3-06 citas
+  0.7120 con maxlen 5"); nunca digas solo "citaste bien los valores". Sin calificaciones ni puntos.
 - "comentarios_generales": opcional (cadena vacía si no hace falta). Úsalo para algo general que no cabe
   en un criterio: notebook sin ejecutar completo, respuestas que parecen escritas con IA, o respuestas
   burlonas o que no corresponden a lo solicitado (se mencionan sin penalizar).
@@ -80,8 +93,13 @@ def esquema_respuesta(lista: Sequence[CriterioLista]) -> dict[str, Any]:
             "criterios": {"type": "array", "items": criterio},
             "comentarios_generales": {"type": "string"},
             "alertas": {"type": "array", "items": {"type": "string"}},
+            "marca_revision": {
+                "type": "object",
+                "properties": {"hay": {"type": "boolean"}, "detalle": {"type": "string"}},
+                "required": ["hay", "detalle"],
+            },
         },
-        "required": ["criterios", "comentarios_generales", "alertas"],
+        "required": ["criterios", "comentarios_generales", "alertas", "marca_revision"],
     }
 
 
@@ -92,18 +110,29 @@ def seccion_verificacion(cifras_faltantes: Mapping[str, Sequence[str]]) -> str:
     return "VERIFICACIÓN AUTOMÁTICA: cifras citadas que NO aparecen en sus salidas:\n" + "\n".join(lineas)
 
 
+def indice_imagenes(imagenes: Sequence[ImagenPagina]) -> str:
+    lineas = [f"[Imagen {k}] {i.origen}, página {i.numero}" for k, i in enumerate(imagenes, start=1)]
+    return "IMÁGENES ADJUNTAS (en este orden):\n" + "\n".join(lineas) if lineas else ""
+
+
 def revisar_entrega(
     proveedor: ProveedorIA,
     lista: Sequence[CriterioLista],
     contexto: str,
     entrega: str,
     cifras_faltantes: Mapping[str, Sequence[str]] | None = None,
+    imagenes: Sequence[ImagenPagina] = (),
 ) -> Evaluacion:
     """Pide la evaluación y la valida. La entrega ya debe venir seudonimizada."""
     contenido = (
         entrega if cifras_faltantes is None else f"{entrega}\n\n{seccion_verificacion(cifras_faltantes)}"
     )
+    if imagenes:
+        contenido = f"{contenido}\n\n{indice_imagenes(imagenes)}"
     datos = proveedor.generar_json(
-        construir_instrucciones(lista, contexto), contenido, esquema_respuesta(lista)
+        construir_instrucciones(lista, contexto),
+        contenido,
+        esquema_respuesta(lista),
+        [i.jpeg for i in imagenes],
     )
     return evaluacion_desde_datos(datos, lista, Origen.GEMINI, proveedor.modelo, VERSION_PROMPT)
